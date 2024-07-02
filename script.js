@@ -80,13 +80,14 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   //Articulo Detalle Marca	IVA	Unidad	Dto.	Mon.	P/Lista
-
+  /*
   const handleScroll = () => {
     if (window.innerHeight + window.scrollY >= document.body.offsetHeight) {
       currentPage++;
       fetchAndDecompressProducts(currentPage);
     }
   };
+  */
 
   const filterProducts = (searchTerm, products) => {
     return products.filter(
@@ -119,5 +120,5 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   });
 
-  window.addEventListener("scroll", handleScroll);
+  //window.addEventListener("scroll", handleScroll);
 });
