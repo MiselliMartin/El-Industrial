@@ -1,0 +1,162 @@
+[
+  {
+    "Articulo": "Taladro Inalámbrico",
+    "Detalle": "Taladro inalámbrico con batería de 18V",
+    "Marca": "Bosch",
+    "Unidad": "Pieza",
+    "Dto": "10%",
+    "PLista": 15000
+  },
+  {
+    "Articulo": "Sierra Circular",
+    "Detalle": "Sierra circular 1400W con disco de 7 1/4 pulgadas",
+    "Marca": "Makita",
+    "Unidad": "Pieza",
+    "Dto": "15%",
+    "PLista": 20000
+  },
+  {
+    "Articulo": "Destornillador Eléctrico",
+    "Detalle": "Destornillador eléctrico con 20 puntas intercambiables",
+    "Marca": "Black+Decker",
+    "Unidad": "Pieza",
+    "Dto": "20%",
+    "PLista": 8000
+  },
+  {
+    "Articulo": "Amoladora Angular",
+    "Detalle": "Amoladora angular 1200W con disco de 4.5 pulgadas",
+    "Marca": "DeWalt",
+    "Unidad": "Pieza",
+    "Dto": "5%",
+    "PLista": 12000
+  },
+  {
+    "Articulo": "Lijadora Orbital",
+    "Detalle": "Lijadora orbital 240W con 10 hojas de lija",
+    "Marca": "Stanley",
+    "Unidad": "Pieza",
+    "Dto": "25%",
+    "PLista": 7000
+  },
+  {
+    "Articulo": "Martillo Perforador",
+    "Detalle": "Martillo perforador 1500W con 3 brocas",
+    "Marca": "Hilti",
+    "Unidad": "Pieza",
+    "Dto": "30%",
+    "PLista": 30000
+  },
+  {
+    "Articulo": "Multiherramienta Oscilante",
+    "Detalle": "Multiherramienta oscilante con accesorios múltiples",
+    "Marca": "Dremel",
+    "Unidad": "Pieza",
+    "Dto": "35%",
+    "PLista": 10000
+  },
+  {
+    "Articulo": "Sierra de Calar",
+    "Detalle": "Sierra de calar 700W con guía láser",
+    "Marca": "Skil",
+    "Unidad": "Pieza",
+    "Dto": "40%",
+    "PLista": 9000
+  },
+  {
+    "Articulo": "Compresor de Aire",
+    "Detalle": "Compresor de aire 2HP con tanque de 24L",
+    "Marca": "Puma",
+    "Unidad": "Pieza",
+    "Dto": "45%",
+    "PLista": 15000
+  },
+  {
+    "Articulo": "Soldadora Inverter",
+    "Detalle": "Soldadora inverter 200A con máscara de soldar",
+    "Marca": "Lusqtoff",
+    "Unidad": "Pieza",
+    "Dto": "50%",
+    "PLista": 20000
+  },
+  {
+    "Articulo": "Pistola de Calor",
+    "Detalle": "Pistola de calor 2000W con control de temperatura",
+    "Marca": "Einhell",
+    "Unidad": "Pieza",
+    "Dto": "55%",
+    "PLista": 5000
+  },
+  {
+    "Articulo": "Esmeriladora de Banco",
+    "Detalle": "Esmeriladora de banco 300W con dos muelas",
+    "Marca": "Gamma",
+    "Unidad": "Pieza",
+    "Dto": "60%",
+    "PLista": 8000
+  },
+  {
+    "Articulo": "Cepillo Eléctrico",
+    "Detalle": "Cepillo eléctrico 650W con 3 cuchillas",
+    "Marca": "Kawasaki",
+    "Unidad": "Pieza",
+    "Dto": "65%",
+    "PLista": 9000
+  },
+  {
+    "Articulo": "Atornillador a Batería",
+    "Detalle": "Atornillador a batería 12V con luz LED",
+    "Marca": "Hyundai",
+    "Unidad": "Pieza",
+    "Dto": "70%",
+    "PLista": 6000
+  },
+  {
+    "Articulo": "Cortadora de Césped",
+    "Detalle": "Cortadora de césped eléctrica 1600W con bolsa recolectora",
+    "Marca": "Philco",
+    "Unidad": "Pieza",
+    "Dto": "75%",
+    "PLista": 25000
+  },
+  {
+    "Articulo": "Motosierra a Gasolina",
+    "Detalle": "Motosierra a gasolina 45cc con espada de 18 pulgadas",
+    "Marca": "Husqvarna",
+    "Unidad": "Pieza",
+    "Dto": "80%",
+    "PLista": 35000
+  },
+  {
+    "Articulo": "Taladro de Banco",
+    "Detalle": "Taladro de banco 500W con ajuste de altura",
+    "Marca": "Dogo",
+    "Unidad": "Pieza",
+    "Dto": "85%",
+    "PLista": 12000
+  },
+  {
+    "Articulo": "Llave de Impacto",
+    "Detalle": "Llave de impacto eléctrica 600W con maletín",
+    "Marca": "Taurus",
+    "Unidad": "Pieza",
+    "Dto": "90%",
+    "PLista": 10000
+  },
+  {
+    "Articulo": "Soplador de Hojas",
+    "Detalle": "Soplador de hojas 1800W con función de aspiradora",
+    "Marca": "Garden Plus",
+    "Unidad": "Pieza",
+    "Dto": "95%",
+    "PLista": 15000
+  },
+  {
+    "Articulo": "Hidrolavadora",
+    "Detalle": "Hidrolavadora 1600W con manguera de 8 metros",
+    "Marca": "Karcher",
+    "Unidad": "Pieza",
+    "Dto": "100%",
+    "PLista": 22000
+  }
+]
