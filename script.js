@@ -1,55 +1,41 @@
 document.addEventListener("DOMContentLoaded", () => {
-  //let currentPage = 1;
-  //const productContainer = document.getElementById("productContainer");
   const productTable = document.querySelector("#productTable tbody");
   const searchInput = document.getElementById("searchInput");
   const loader = document.getElementById("loader");
-  let products;
-  /*
-  const fetchAndDecompressProducts = async (page) => {
+  let products = [];
+  const currentJsonFileName = "Lista_Precio_Julio_2024_json_compres.gz"; // Actualiza este nombre cada mes
+
+  const fetchAndDecompressProducts = async () => {
+    console.log("Fetching and decompressing products...");
     loader.classList.remove("hidden");
+
     try {
-      const response = await fetch(`productos${page}.json.gz`);
+      const response = await fetch(currentJsonFileName);
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
-      const compressedStream = response.body;
-      const decompressedStream = compressedStream.pipeThrough(
+
+      const compressedStream = response.body.pipeThrough(
         new DecompressionStream("gzip")
       );
-      const reader = decompressedStream.getReader();
-      let decoder = new TextDecoder("utf-8");
+      const reader = compressedStream.getReader();
+      const decoder = new TextDecoder("utf-8");
       let jsonText = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      let done, value;
+      while ((({ value, done } = await reader.read()), !done)) {
         jsonText += decoder.decode(value, { stream: true });
       }
+      jsonText += decoder.decode(); // Decodes any remaining bytes
 
-      jsonText += decoder.decode();
-      const data = JSON.parse(jsonText);
-      displayProducts(data);
+      products = JSON.parse(jsonText);
+      sessionStorage.setItem("products", JSON.stringify(products));
+      sessionStorage.setItem("jsonFileName", currentJsonFileName);
+      displayProducts(products);
     } catch (error) {
       console.error("Error al cargar los productos:", error);
     }
-    loader.classList.add("hidden");
-  };
-*/
 
-  const fetchProducts = async () => {
-    loader.classList.remove("hidden");
-    try {
-      const response = await fetch("products.json");
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      const data = await response.json();
-      products = data;
-      displayProducts(data);
-    } catch (error) {
-      console.error("Error al cargar los productos:", error);
-    }
     loader.classList.add("hidden");
   };
 
@@ -68,57 +54,44 @@ document.addEventListener("DOMContentLoaded", () => {
     products.forEach((product) => {
       const row = document.createElement("tr");
       row.innerHTML = `
-          <td>${product.Articulo}</td>
-          <td>${product.Detalle}</td>
-          <td>${product.Marca}</td>
-          <td>${product.Unidad}</td>
-          <td>${product.Dto}</td>
-          <td>${product.PLista}</td>
+        <td>${product.producto}</td>
+        <td>${product.detalle}</td>
+        <td>${product.marca}</td>
+        <td>${product.unidad}</td>
+        <td>${product.moneda}</td>
+        <td>${product.precio}</td>
       `;
       productTable.appendChild(row);
     });
   };
 
-  //Articulo Detalle Marca	IVA	Unidad	Dto.	Mon.	P/Lista
-  /*
-  const handleScroll = () => {
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight) {
-      currentPage++;
-      fetchAndDecompressProducts(currentPage);
-    }
-  };
-  */
-
   const filterProducts = (searchTerm, products) => {
     return products.filter(
       (product) =>
-        product.Articulo.toLowerCase().includes(searchTerm) ||
-        product.Detalle.toLowerCase().includes(searchTerm) ||
-        product.Marca.toLowerCase().includes(searchTerm)
+        product.producto.toLowerCase().includes(searchTerm) ||
+        product.detalle.toLowerCase().includes(searchTerm) ||
+        product.marca.toLowerCase().includes(searchTerm)
     );
-    /*
-    let filteredProductsDetalle = products.filter((product) =>
-      product.Detalle.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    if (filterProducts.length < 1) return filteredProductsDetalle;
-    else {
-      return products.filter((product) =>
-        product.Marca.toLowerCase().includes(searchTerm.toLowerCase())
-      ); // No hay coincidencias, devuelve todos los productos
-      
-    }*/
   };
 
-  fetchProducts();
+  const initializeProducts = () => {
+    const storedProducts = sessionStorage.getItem("products");
+    const storedJsonFileName = sessionStorage.getItem("jsonFileName");
+
+    if (storedProducts && storedJsonFileName === currentJsonFileName) {
+      products = JSON.parse(storedProducts);
+      displayProducts(products);
+    } else {
+      fetchAndDecompressProducts();
+    }
+  };
 
   searchInput.addEventListener("input", () => {
     const searchTerm = searchInput.value.toLowerCase();
     const filteredProducts = filterProducts(searchTerm, products);
     productTable.innerHTML = "";
-    displayProducts(
-      filteredProducts ? filteredProducts : "No se han encontrado productos"
-    );
+    displayProducts(filteredProducts);
   });
 
-  //window.addEventListener("scroll", handleScroll);
+  initializeProducts();
 });
