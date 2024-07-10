@@ -2,13 +2,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const productTable = document.querySelector("#productTable tbody");
   const searchInput = document.getElementById("searchInput");
   const loader = document.getElementById("loader");
+  const currentJsonFileName = "Lista_Precio_Julio_2024_json_compres.gz";
+
+  let searchTimeout;
   let products = [];
-  const currentJsonFileName = "Lista_Precio_Julio_2024_json_compres.gz"; // Actualiza este nombre cada mes
 
   const fetchAndDecompressProducts = async () => {
     console.log("Fetching and decompressing products...");
     loader.classList.remove("hidden");
-
     try {
       const response = await fetch(currentJsonFileName);
       if (!response.ok) {
@@ -66,11 +67,17 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const filterProducts = (searchTerm, products) => {
-    return products.filter(
-      (product) =>
-        product.producto.toLowerCase().includes(searchTerm) ||
-        product.detalle.toLowerCase().includes(searchTerm) ||
-        product.marca.toLowerCase().includes(searchTerm)
+    const searchTerms = searchTerm
+      .split(" ")
+      .map((term) => term.trim())
+      .filter((term) => term);
+    return products.filter((product) =>
+      searchTerms.every(
+        (term) =>
+          product.producto.toLowerCase().includes(term) ||
+          product.detalle.toLowerCase().includes(term) ||
+          product.marca.toLowerCase().includes(term)
+      )
     );
   };
 
@@ -87,10 +94,17 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   searchInput.addEventListener("input", () => {
-    const searchTerm = searchInput.value.toLowerCase();
-    const filteredProducts = filterProducts(searchTerm, products);
-    productTable.innerHTML = "";
-    displayProducts(filteredProducts);
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      const searchTerm = searchInput.value.toLowerCase().trim();
+      if (searchTerm.length > 0) {
+        const filteredProducts = filterProducts(searchTerm, products);
+        productTable.innerHTML = "";
+        displayProducts(filteredProducts);
+      } else {
+        displayProducts(products);
+      }
+    }, 400);
   });
 
   initializeProducts();
