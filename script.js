@@ -113,7 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   themeToggle.addEventListener("click", () => {
     document.body.classList.toggle("dark-mode");
-    if (themeToggle.classList.contains("dark-mode")) {
+    if (document.body.classList.contains("dark-mode")) {
       themeToggle.innerHTML = "☀️";
     } else {
       themeToggle.innerHTML = "🌑";
