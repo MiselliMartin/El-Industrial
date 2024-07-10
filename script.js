@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchInput = document.getElementById("searchInput");
   const loader = document.getElementById("loader");
   const currentJsonFileName = "Lista_Precio_Julio_2024_json_compres.gz";
+  const themeToggle = document.getElementById("themeToggle");
 
   let searchTimeout;
   let products = [];
@@ -64,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
       productTable.appendChild(row);
     });
+    loader.classList.add("hidden");
   };
 
   const filterProducts = (searchTerm, products) => {
@@ -108,4 +110,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   initializeProducts();
+
+  themeToggle.addEventListener("click", () => {
+    document.body.classList.toggle("dark-mode");
+    if (themeToggle.classList.contains("dark-mode")) {
+      themeToggle.innerHTML = "☀️";
+    } else {
+      themeToggle.innerHTML = "🌑";
+    }
+  });
 });

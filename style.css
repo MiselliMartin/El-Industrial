@@ -10,9 +10,9 @@ h1 {
 }
 
 #searchInput {
-  width: 100%;
-  padding: 10px;
   margin-bottom: 20px;
+  padding: 10px;
+  width: calc(100% - 24px);
   box-sizing: border-box;
 }
 
@@ -41,6 +41,24 @@ th {
   background-color: #ffffff; /* Color para las filas impares */
 }
 
+#themeToggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: transparent;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
 .product {
   border: 1px solid #ddd;
   padding: 10px;
@@ -54,4 +72,32 @@ th {
 
 .hidden {
   display: none;
+}
+
+/* Modo oscuro */
+body.dark-mode {
+  background-color: #2e2e2e;
+  color: white;
+}
+
+body.dark-mode #productTable tr:nth-child(even) {
+  background-color: #1e1e1eb9; /* Color para las filas pares */
+}
+
+body.dark-mode #productTable tr:nth-child(odd) {
+  background-color: #2e2e2eb9; /* Color para las filas impares */
+}
+
+body.dark-mode h1 {
+  color: white;
+}
+
+body.dark-mode input {
+  background-color: #453e3e;
+  color: white;
+}
+
+body.dark-mode th {
+  background-color: #1e1e1eb9;
+  color: white;
 }
