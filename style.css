@@ -10,23 +10,37 @@ h1 {
 }
 
 #searchInput {
-  margin-bottom: 20px;
-  padding: 10px;
-  width: calc(100% - 24px);
+  margin: 10px auto;
+  padding: 10px 20px;
+  width: calc(100% - 42px);
   box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 25px;
+  font-size: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.3s ease;
+  display: block;
 }
 
-table {
+#searchInput:focus {
+  border-color: #007bff;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+  outline: none;
+}
+
+#productTable {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 20px;
+  margin: 20px auto;
 }
 
-th,
-td {
+#productTable th,
+#productTable td {
   border: 1px solid #ddd;
   padding: 8px;
-  text-align: left;
+  word-wrap: break-word;
+  word-break: break-all;
+  white-space: normal;
 }
 
 th {
@@ -100,4 +114,54 @@ body.dark-mode input {
 body.dark-mode th {
   background-color: #1e1e1eb9;
   color: white;
+}
+
+@media (max-width: 768px) {
+  #searchInput {
+    width: calc(100% - 22px);
+  }
+
+  #productTable {
+    display: block;
+    overflow-x: auto; /* Añadir desplazamiento horizontal */
+  }
+
+  #productTable thead,
+  #productTable tbody,
+  #productTable th,
+  #productTable td,
+  #productTable tr {
+    display: block;
+  }
+
+  #productTable thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  #productTable tr {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+  }
+
+  #productTable td {
+    border: none;
+    border-bottom: 1px solid #eee;
+    position: relative;
+    padding-left: 50%;
+    white-space: normal; /* Permitir ajuste de línea */
+    word-wrap: break-word; /* Permitir que el texto se ajuste */
+    word-break: break-all; /* Permitir que el texto se divida en múltiples líneas */
+  }
+
+  #productTable td:before {
+    content: attr(data-label);
+    position: absolute;
+    left: 10px;
+    width: calc(50% - 20px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }

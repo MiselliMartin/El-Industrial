@@ -56,12 +56,12 @@ document.addEventListener("DOMContentLoaded", () => {
     products.forEach((product) => {
       const row = document.createElement("tr");
       row.innerHTML = `
-        <td>${product.producto}</td>
-        <td>${product.detalle}</td>
-        <td>${product.marca}</td>
-        <td>${product.unidad}</td>
-        <td>${product.moneda}</td>
-        <td>${product.precio}</td>
+        <td data-label="Producto">${product.producto}</td>
+        <td data-label="Detalle">${product.detalle}</td>
+        <td data-label="Marca">${product.marca}</td>
+        <td data-label="Unidad">${product.unidad}</td>
+        <td data-label="Moneda">${product.moneda}</td>
+        <td data-label="Precio">${product.precio}</td>
       `;
       productTable.appendChild(row);
     });
