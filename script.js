@@ -111,8 +111,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 400);
   });
 
-  initializeProducts();
-
   themeToggle.addEventListener("click", () => {
     document.body.classList.toggle("dark-mode");
     if (document.body.classList.contains("dark-mode")) {
@@ -121,4 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
       themeToggle.innerHTML = "🌙";
     }
   });
+
+  initializeProducts();
+  searchInput.focus();
 });
