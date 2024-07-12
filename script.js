@@ -115,8 +115,10 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.classList.toggle("dark-mode");
     if (document.body.classList.contains("dark-mode")) {
       themeToggle.innerHTML = "☀️";
+      themeToggle.style.backgroundColor = "#2e2e2e";
     } else {
       themeToggle.innerHTML = "🌙";
+      themeToggle.style.backgroundColor = "#fafafa";
     }
   });
 
