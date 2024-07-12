@@ -33,13 +33,14 @@ document.addEventListener("DOMContentLoaded", () => {
       jsonText += decoder.decode(); // Decodes any remaining bytes
 
       products = JSON.parse(jsonText);
-      sessionStorage.setItem("products", JSON.stringify(products));
-      sessionStorage.setItem("jsonFileName", currentJsonFileName);
+      localStorage.removeItem("products");
+      localStorage.removeItem("jsonFileName");
+      localStorage.setItem("products", JSON.stringify(products));
+      localStorage.setItem("jsonFileName", currentJsonFileName);
       displayProducts(products);
     } catch (error) {
       console.error("Error al cargar los productos:", error);
     }
-
     loader.classList.add("hidden");
   };
 
@@ -63,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <td data-label="Marca">${product.marca}</td>
         <td data-label="Un/Mts">${product.unidad == "UN" ? "Un" : "Mts"}</td>
         <td data-label="Precio">${product.moneda + " " + product.precio}</td>
-      `;
+        `;
       productTable.appendChild(row);
     });
     loader.classList.add("hidden");
