@@ -149,7 +149,7 @@ body.dark-mode th {
     border: none;
     border-bottom: 1px solid #eee;
     position: relative;
-    padding-left: 50%;
+    padding-left: 30%; /* Ajustar padding para reflejar el ancho del data-label */
     white-space: normal; /* Permitir ajuste de línea */
     word-wrap: break-word; /* Permitir que el texto se ajuste */
     word-break: break-all; /* Permitir que el texto se divida en múltiples líneas */
@@ -159,7 +159,7 @@ body.dark-mode th {
     content: attr(data-label);
     position: absolute;
     left: 10px;
-    width: calc(50% - 20px);
+    width: calc(30% - 20px); /* Ajustar el ancho del data-label al 30% */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

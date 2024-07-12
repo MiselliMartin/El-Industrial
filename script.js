@@ -2,7 +2,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const productTable = document.querySelector("#productTable tbody");
   const searchInput = document.getElementById("searchInput");
   const loader = document.getElementById("loader");
-  const currentJsonFileName = "Lista_Precio_Julio_2024_json_compres.gz";
+  //IMPORTANTE CAMBIAR SI SE SUBE UN NUEVO JSON ↓
+  const currentJsonFileName = "ListaPrecio2 10-07-24_json_compres.gz";
+  //IMPORTANTE CAMBIAR SI SE SUBE UN NUEVO JSON ↑
   const themeToggle = document.getElementById("themeToggle");
 
   let searchTimeout;
@@ -59,9 +61,8 @@ document.addEventListener("DOMContentLoaded", () => {
         <td data-label="Producto">${product.producto}</td>
         <td data-label="Detalle">${product.detalle}</td>
         <td data-label="Marca">${product.marca}</td>
-        <td data-label="Unidad">${product.unidad}</td>
-        <td data-label="Moneda">${product.moneda}</td>
-        <td data-label="Precio">${product.precio}</td>
+        <td data-label="Un/Mts">${product.unidad == "UN" ? "Un" : "Mts"}</td>
+        <td data-label="Precio">${product.moneda + " " + product.precio}</td>
       `;
       productTable.appendChild(row);
     });
@@ -84,12 +85,12 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const initializeProducts = () => {
-    const storedProducts = sessionStorage.getItem("products");
     const storedJsonFileName = sessionStorage.getItem("jsonFileName");
-
-    if (storedProducts && storedJsonFileName === currentJsonFileName) {
+    if (storedJsonFileName === currentJsonFileName) {
+      const storedProducts = sessionStorage.getItem("products");
       products = JSON.parse(storedProducts);
       displayProducts(products);
+      loader.classList.add("hidden");
     } else {
       fetchAndDecompressProducts();
     }
@@ -116,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (document.body.classList.contains("dark-mode")) {
       themeToggle.innerHTML = "☀️";
     } else {
-      themeToggle.innerHTML = "🌑";
+      themeToggle.innerHTML = "🌙";
     }
   });
 });
