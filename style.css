@@ -62,10 +62,9 @@ th {
   background-color: #ffffff; /* Color para las filas impares */
 }
 
-#themeToggle {
+.btnFloat {
   position: fixed;
-  top: 29px;
-  right: 1px;
+  right: 3px;
   background-color: transparent;
   color: white;
   border: none;
@@ -79,6 +78,14 @@ th {
   justify-content: center;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   background-color: #fafafa;
+}
+
+.btnToggle {
+  top: 29px;
+}
+
+.btnWpp {
+  bottom: 20px;
 }
 
 .product {
