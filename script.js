@@ -51,8 +51,13 @@ document.addEventListener("DOMContentLoaded", () => {
       jsonText += decoder.decode();
 
       products = JSON.parse(jsonText);
-      sessionStorage.setItem("products", JSON.stringify(products));
-      sessionStorage.setItem("jsonFileName", currentJsonFileName);
+      // sessionStorage.setItem("products", JSON.stringify(products));
+      // sessionStorage.setItem("jsonFileName", currentJsonFileName);
+
+      localStorage.removeItem("products");
+      localStorage.removeItem("jsonFileName");
+      localStorage.setItem("products", JSON.stringify(products));
+      localStorage.setItem("jsonFileName", currentJsonFileName);
       displayProducts(products);
     } catch (error) {
       console.error("Error al cargar los productos:", error);
