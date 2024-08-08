@@ -3,36 +3,63 @@ body {
   margin: 25px;
   background-color: #fafafa;
 }
-/* 
-h1 img {
-  width: 40px;
+
+#searchContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px auto;
+  width: 100%;
 }
 
-h1 {
-  text-align: center;
-  color: #0097b2;
-  font-family: monospace;
-  font-size: 2.5rem;
-  font-weight: bolder;
-} */
-
 #searchInput {
-  margin: 20px auto;
+  flex: 0 0 calc(82.5% - 20px);
+  margin: 0;
   padding: 10px 20px;
-  width: calc(100% - 42px);
   box-sizing: border-box;
   border: 1px solid #ccc;
   border-radius: 25px;
   font-size: 16px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: border-color 0.3s ease;
-  display: block;
 }
 
 #searchInput:focus {
   border-color: #007bff;
   box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
   outline: none;
+}
+
+#dollarInfo {
+  flex: 0 0 12.5%;
+  height: 42px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  margin-left: 10px;
+  margin-right: 30px;
+  overflow: hidden;
+}
+
+#dollarInfo span {
+  display: block;
+  font-size: 16px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+#dollarInfo #dollarPrice {
+  font-size: 16px;
+  font-weight: bold;
 }
 
 #productTable {
@@ -55,11 +82,11 @@ th {
 }
 
 #productTable tr:nth-child(even) {
-  background-color: #f2f2f2; /* Color para las filas pares */
+  background-color: #f2f2f2;
 }
 
 #productTable tr:nth-child(odd) {
-  background-color: #ffffff; /* Color para las filas impares */
+  background-color: #ffffff;
 }
 
 .btnFloat {
@@ -110,11 +137,11 @@ body.dark-mode {
 }
 
 body.dark-mode #productTable tr:nth-child(even) {
-  background-color: #1e1e1eb9; /* Color para las filas pares */
+  background-color: #1e1e1eb9;
 }
 
 body.dark-mode #productTable tr:nth-child(odd) {
-  background-color: #2e2e2eb9; /* Color para las filas impares */
+  background-color: #2e2e2eb9;
 }
 
 body.dark-mode input {
@@ -127,14 +154,32 @@ body.dark-mode th {
   color: white;
 }
 
+body.dark-mode #dollarInfo {
+  background-color: #3e3e3e;
+  color: white;
+  border-color: #555;
+}
+
 @media (max-width: 768px) {
+  #searchContainer {
+    flex-direction: column;
+  }
+
   #searchInput {
-    width: calc(100% - 22px);
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  #dollarInfo {
+    width: 100%;
+    height: auto;
+    padding: 10px;
+    margin-left: 0;
   }
 
   #productTable {
     display: block;
-    overflow-x: auto; /* Añadir desplazamiento horizontal */
+    overflow-x: auto;
   }
 
   #productTable thead,
@@ -160,17 +205,17 @@ body.dark-mode th {
     border: none;
     border-bottom: 1px solid #eee;
     position: relative;
-    padding-left: 30%; /* Ajustar padding para reflejar el ancho del data-label */
-    white-space: normal; /* Permitir ajuste de línea */
-    word-wrap: break-word; /* Permitir que el texto se ajuste */
-    word-break: break-all; /* Permitir que el texto se divida en múltiples líneas */
+    padding-left: 30%;
+    white-space: normal;
+    word-wrap: break-word;
+    word-break: break-all;
   }
 
   #productTable td:before {
     content: attr(data-label);
     position: absolute;
     left: 10px;
-    width: calc(30% - 20px); /* Ajustar el ancho del data-label al 30% */
+    width: calc(30% - 20px);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

@@ -10,7 +10,15 @@
   <body>
     <!-- <h1>El Indus<img src="t.png" alt="" />rial</h1> -->
     <button id="themeToggle" class="btnFloat btnToggle">🌙</button>
-    <input type="text" id="searchInput" placeholder="Buscar productos..." />
+    <!-- <input type="text" id="searchInput" placeholder="Buscar productos..." /> -->
+    <div id="searchContainer">
+      <input type="text" id="searchInput" placeholder="Buscar productos..." />
+      <div id="dollarInfo">
+        <span>Dolar Hoy</span>
+        <!-- <span id="dollarDatee" ></span> -->
+        <span id="dollarPrice"></span>
+      </div>
+    </div>
     <table id="productTable">
       <thead>
         <tr>
@@ -24,9 +32,9 @@
       </thead>
       <tbody></tbody>
     </table>
-    <div id="loader">
+    <!-- <div id="loader">
       Cargando productos... Esto podría demorar un tiempo...
-    </div>
+    </div> -->
     <script src="script.js"></script>
   </body>
 </html>

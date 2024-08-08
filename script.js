@@ -2,13 +2,30 @@ document.addEventListener("DOMContentLoaded", () => {
   const productTable = document.querySelector("#productTable tbody");
   const searchInput = document.getElementById("searchInput");
   const loader = document.getElementById("loader");
+  const themeToggle = document.getElementById("themeToggle");
+  const dollarDateElement = document.getElementById("dollarDate");
+  const dollarPriceElement = document.getElementById("dollarPrice");
+
   //IMPORTANTE CAMBIAR SI SE SUBE UN NUEVO JSON ↓
   const currentJsonFileName = "ListaPrecio 25-07-24_json_compres.gz";
   //IMPORTANTE CAMBIAR SI SE SUBE UN NUEVO JSON ↑
-  const themeToggle = document.getElementById("themeToggle");
 
   let searchTimeout;
   let products = [];
+
+  const fetchDollarPrice = async () => {
+    try {
+      const response = await fetch("https://dolarapi.com/v1/dolares/oficial");
+      const data = await response.json();
+      //const date = new Date(data.fechaActualizacion);
+      //dollarDateElement.textContent = date.toLocaleDateString();
+      dollarPriceElement.textContent = `$${data.venta.toFixed(2)}`;
+    } catch (error) {
+      console.error("Error al obtener el precio del dólar:", error);
+      //dollarDateElement.textContent = "N/A";
+      dollarPriceElement.textContent = "N/A";
+    }
+  };
 
   const fetchAndDecompressProducts = async () => {
     console.log("Fetching and decompressing products...");
@@ -26,17 +43,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const decoder = new TextDecoder("utf-8");
       let jsonText = "";
 
-      let done, value;
-      while ((({ value, done } = await reader.read()), !done)) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
         jsonText += decoder.decode(value, { stream: true });
       }
-      jsonText += decoder.decode(); // Decodes any remaining bytes
+      jsonText += decoder.decode();
 
       products = JSON.parse(jsonText);
-      localStorage.removeItem("products");
-      localStorage.removeItem("jsonFileName");
-      localStorage.setItem("products", JSON.stringify(products));
-      localStorage.setItem("jsonFileName", currentJsonFileName);
+      sessionStorage.setItem("products", JSON.stringify(products));
+      sessionStorage.setItem("jsonFileName", currentJsonFileName);
       displayProducts(products);
     } catch (error) {
       console.error("Error al cargar los productos:", error);
@@ -44,37 +60,33 @@ document.addEventListener("DOMContentLoaded", () => {
     loader.classList.add("hidden");
   };
 
-  const displayProducts = (products) => {
-    productTable.innerHTML = ""; // Limpiar el contenido de la tabla
-    if (products.length === 0) {
+  const displayProducts = (productsToDisplay) => {
+    productTable.innerHTML = "";
+    if (productsToDisplay.length === 0) {
       const row = document.createElement("tr");
       const cell = document.createElement("td");
-      cell.colSpan = 6; // Asumiendo que tienes 6 columnas
+      cell.colSpan = 5;
       cell.textContent = "No se ha encontrado el producto.";
       cell.style.textAlign = "center";
       row.appendChild(cell);
       productTable.appendChild(row);
       return;
     }
-    products.forEach((product) => {
+    productsToDisplay.forEach((product) => {
       const row = document.createElement("tr");
       row.innerHTML = `
         <td data-label="Producto">${product.producto}</td>
         <td data-label="Detalle">${product.detalle}</td>
         <td data-label="Marca">${product.marca}</td>
-        <td data-label="Un/Mts">${product.unidad == "UN" ? "Un" : "Mts"}</td>
-        <td data-label="Precio">${product.moneda + " " + product.precio}</td>
-        `;
+        <td data-label="Un/Mts">${product.unidad === "UN" ? "Un" : "Mts"}</td>
+        <td data-label="Precio">${product.moneda} ${product.precio}</td>
+      `;
       productTable.appendChild(row);
     });
-    loader.classList.add("hidden");
   };
 
-  const filterProducts = (searchTerm, products) => {
-    const searchTerms = searchTerm
-      .split(" ")
-      .map((term) => term.trim())
-      .filter((term) => term);
+  const filterProducts = (searchTerm) => {
+    const searchTerms = searchTerm.toLowerCase().split(/\s+/).filter(Boolean);
     return products.filter((product) =>
       searchTerms.every(
         (term) =>
@@ -91,7 +103,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const storedProducts = sessionStorage.getItem("products");
       products = JSON.parse(storedProducts);
       displayProducts(products);
-      loader.classList.add("hidden");
     } else {
       fetchAndDecompressProducts();
     }
@@ -100,28 +111,19 @@ document.addEventListener("DOMContentLoaded", () => {
   searchInput.addEventListener("input", () => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-      const searchTerm = searchInput.value.toLowerCase().trim();
-      if (searchTerm.length > 0) {
-        const filteredProducts = filterProducts(searchTerm, products);
-        productTable.innerHTML = "";
-        displayProducts(filteredProducts);
-      } else {
-        displayProducts(products);
-      }
+      const searchTerm = searchInput.value.trim();
+      const filteredProducts = searchTerm ? filterProducts(searchTerm) : products;
+      displayProducts(filteredProducts);
     }, 400);
   });
 
   themeToggle.addEventListener("click", () => {
     document.body.classList.toggle("dark-mode");
-    if (document.body.classList.contains("dark-mode")) {
-      themeToggle.innerHTML = "☀️";
-      themeToggle.style.backgroundColor = "#2e2e2e";
-    } else {
-      themeToggle.innerHTML = "🌙";
-      themeToggle.style.backgroundColor = "#fafafa";
-    }
+    themeToggle.innerHTML = document.body.classList.contains("dark-mode") ? "☀️" : "🌙";
+    themeToggle.style.backgroundColor = document.body.classList.contains("dark-mode") ? "#2e2e2e" : "#fafafa";
   });
 
   initializeProducts();
+  fetchDollarPrice();
   searchInput.focus();
 });
