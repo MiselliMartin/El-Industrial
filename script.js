@@ -15,11 +15,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const fetchDollarPrice = async () => {
     try {
-      const response = await fetch("https://dolarapi.com/v1/dolares/oficial");
+      const response = await fetch("https://dolarapi.com/v1/ambito/dolares/oficial");
       const data = await response.json();
+      console.log(data)
       //const date = new Date(data.fechaActualizacion);
       //dollarDateElement.textContent = date.toLocaleDateString();
-      dollarPriceElement.textContent = `$${data.venta.toFixed(2)}`;
+      dollarPriceElement.textContent = `$${data.venta.toFixed(2)}`; //
     } catch (error) {
       console.error("Error al obtener el precio del dólar:", error);
       //dollarDateElement.textContent = "N/A";
