@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const dollarPriceElement = document.getElementById("dollarPrice");
 
   //IMPORTANTE CAMBIAR SI SE SUBE UN NUEVO JSON ↓
-  const currentJsonFileName = "ListaPrecio_03-09-24_json_compres.gz";
+  const currentJsonFileName = "ListaPrecio_13-09-24_json_compres.gz";
   //IMPORTANTE CAMBIAR SI SE SUBE UN NUEVO JSON ↑
 
   let searchTimeout;
