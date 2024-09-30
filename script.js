@@ -132,4 +132,25 @@ document.addEventListener("DOMContentLoaded", () => {
   initializeProducts();
   fetchDollarPrice();
   searchInput.focus();
+
+  const extractDateFromFileName = (fileName) => {
+    const datePattern = /\d{2}-\d{2}-\d{4}/;
+    const match = fileName.match(datePattern);
+    return match ? match[0] : null;
+  };
+
+  const displayDate = () => {
+    const fechaListaElement = document.getElementById("fechaLista");
+    const fechaExtraida = extractDateFromFileName(currentJsonFileName);
+    
+    if (fechaExtraida) {
+      fechaListaElement.textContent = `Según Lista ${fechaExtraida}`;
+      fechaListaElement.style.fontSize = "small";
+      fechaListaElement.style.textAlign = "center";
+    }
+  };
+
+  // Llamamos a la función displayDate para mostrar la fecha.
+  displayDate();
+
 });
