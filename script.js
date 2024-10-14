@@ -134,7 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
   searchInput.focus();
 
   const extractDateFromFileName = (fileName) => {
-    const datePattern = /\d{2}-\d{2}-\d{4}/;
+    const datePattern = /\d{2}-\d{2}-\d{2}(?:\d{2})?/;
     const match = fileName.match(datePattern);
     return match ? match[0] : null;
   };
