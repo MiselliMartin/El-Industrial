@@ -1,13 +1,16 @@
 #!/bin/bash
 
-# Navigate to the project directory
-cd "/home/jorge/Documents/Github/El-Industrial" || exit
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( dirname "$SCRIPT_DIR" )"
+
+cd "$PROJECT_ROOT" || exit
 
 echo "--- Starting Price List Update ---"
 echo "Date: $(date)"
 
 # Run the update script
-python3 update_products.py
+python3 "$SCRIPT_DIR/update_products.py"
 
 if [ $? -eq 0 ]; then
     echo "Update successful. Pushing to repository..."
@@ -18,7 +21,6 @@ if [ $? -eq 0 ]; then
     git push
     
     echo "--- Update Complete and Pushed ---"
-    echo "Check report_cambios.md for details."
 else
     echo "--- Update Failed ---"
     exit 1
