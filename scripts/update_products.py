@@ -10,9 +10,21 @@ import urllib.request
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 API_URL = "https://autogestion-ehaedo.bertual.com.ar:8200/api"
 LATEST_INDEX_FILE = os.path.join(BASE_DIR, "latest-json-filename.txt")
+CONFIG_FILE = os.path.join(BASE_DIR, "config.json")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 REPORTS_DIR = os.path.join(BASE_DIR, "reports")
 ENV_FILE = os.path.join(BASE_DIR, ".env")
+
+def load_config():
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r") as f:
+            return json.load(f)
+    return {"markup": 0.60, "iva": 0.21, "resale_discount": 0.20}
+
+config = load_config()
+MARKUP = config.get("markup", 0.60)
+IVA = config.get("iva", 0.21)
+RESALE_DISCOUNT = config.get("resale_discount", 0.20)
 
 def load_env():
     env_vars = {}
@@ -28,8 +40,6 @@ env = load_env()
 CUIT = env.get("BERTUAL_CUIT")
 PASSWORD = env.get("BERTUAL_PASSWORD")
 CLIENT_ID = env.get("BERTUAL_CLIENT_ID")
-MARKUP = float(env.get("PROFIT_MARKUP", 0.60))
-IVA = float(env.get("IVA", 0.21))
 
 if not all([CUIT, PASSWORD, CLIENT_ID]):
     print(f"Error: Credentials must be set in {ENV_FILE}")
@@ -78,7 +88,7 @@ def transform_item(api_item):
         "unidad": api_item.get("Unidad"),
         "moneda": moneda,
         "precio": "{:.2f}".format(final_price),
-        "precio_resale": "{:.2f}".format(final_price * 0.8) # 20% discount for Ferreteria
+        "precio_resale": "{:.2f}".format(final_price * (1 - RESALE_DISCOUNT))
     }
 
 def generate_reports(items, changes):
