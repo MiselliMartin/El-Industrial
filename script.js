@@ -96,12 +96,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     productsToDisplay.forEach((product) => {
       const row = document.createElement("tr");
+      const monedaDisplay = (product.moneda === "DOL" || product.moneda === "USD") ? "U$S" : product.moneda;
       row.innerHTML = `
         <td data-label="Producto">${product.producto}</td>
         <td data-label="Detalle">${product.detalle}</td>
         <td data-label="Marca">${product.marca}</td>
-        <td data-label="Un/Mts">${product.unidad === "UN" ? "Un" : "Mts"}</td>
-        <td data-label="Precio">${product.moneda} ${product.precio}</td>
+        <td data-label="Un/Mts">${product.unidad === "UN" || product.unidad === "Un" ? "Un" : "Mts"}</td>
+        <td data-label="Precio">${monedaDisplay} ${product.precio}</td>
       `;
       productTable.appendChild(row);
     });
