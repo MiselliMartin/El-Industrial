@@ -32,7 +32,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       const response = await fetch("https://dolarapi.com/v1/ambito/dolares/oficial");
       const data = await response.json();
       console.log("Precio del dólar obtenido:", data);
-      dollarPriceElement.textContent = `$${data.venta.toFixed(2)}`;
+      const ventaRedondeada = Math.round(data.venta);
+      dollarPriceElement.textContent = `$${ventaRedondeada}`;
+      
+      const fecha = new Date(data.fechaActualizacion);
+      const opciones = { day: '2-digit', month: '2-digit' };
+      const dollarDateElement = document.getElementById("dollarDatee");
+      if (dollarDateElement) {
+        dollarDateElement.textContent = `(${fecha.toLocaleDateString('es-AR', opciones)})`;
+      }
     } catch (error) {
       console.error("Error al obtener el precio del dólar:", error);
       dollarPriceElement.textContent = "N/A";

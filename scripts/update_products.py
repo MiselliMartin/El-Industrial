@@ -5,6 +5,8 @@ import os
 import csv
 from datetime import datetime
 import urllib.request
+import requests
+import xlsxwriter
 
 # Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -15,16 +17,15 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 REPORTS_DIR = os.path.join(BASE_DIR, "reports")
 ENV_FILE = os.path.join(BASE_DIR, ".env")
 
+# Telegram Default (Found on RasPi)
+TELEGRAM_TOKEN = "8174958315:AAFL8e_hBh0jsO1VpLiUp33mLRnji0gZ63g"
+TELEGRAM_CHAT_ID = "6425231391"
+
 def load_config():
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, "r") as f:
             return json.load(f)
-    return {"markup": 0.60, "iva": 0.21, "resale_discount": 0.20}
-
-config = load_config()
-MARKUP = config.get("markup", 0.60)
-IVA = config.get("iva", 0.21)
-RESALE_DISCOUNT = config.get("resale_discount", 0.20)
+    return {"markup": 0.0, "iva": 0.0, "resale_discount": 0.20}
 
 def load_env():
     env_vars = {}
@@ -37,13 +38,30 @@ def load_env():
     return env_vars
 
 env = load_env()
+config = load_config()
+
 CUIT = env.get("BERTUAL_CUIT")
 PASSWORD = env.get("BERTUAL_PASSWORD")
 CLIENT_ID = env.get("BERTUAL_CLIENT_ID")
 
-if not all([CUIT, PASSWORD, CLIENT_ID]):
-    print(f"Error: Credentials must be set in {ENV_FILE}")
-    exit(1)
+MARKUP = config.get("markup", 0.0)
+IVA = config.get("iva", 0.0)
+RESALE_DISCOUNT = config.get("resale_discount", 0.20)
+
+def send_telegram_file(file_path, caption):
+    print(f"Sending {file_path} to Telegram...")
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendDocument"
+    try:
+        with open(file_path, 'rb') as f:
+            files = {'document': f}
+            data = {'chat_id': TELEGRAM_CHAT_ID, 'caption': caption}
+            response = requests.post(url, files=files, data=data)
+            if response.status_code == 200:
+                print("Telegram message sent successfully.")
+            else:
+                print(f"Error sending Telegram: {response.text}")
+    except Exception as e:
+        print(f"Telegram error: {e}")
 
 def load_current_data():
     if not os.path.exists(LATEST_INDEX_FILE): return {}
@@ -71,16 +89,18 @@ def fetch_products(token):
         return res_data.get("data", [])
 
 def calculate_price(neto):
-    # FORMULA: Costo Neto * (1 + IVA) * (1 + Ganancia)
     return neto * (1 + IVA) * (1 + MARKUP)
 
 def transform_item(api_item):
     neto = api_item.get("Precio_Neto", 0)
     final_price = calculate_price(neto)
-    
     code = api_item.get("Articulo_Corto") or api_item.get("Articulo")
-    moneda = "$" if api_item.get("Moneda") == "PES" else api_item.get("Moneda")
     
+    moneda_raw = api_item.get("Moneda")
+    if moneda_raw == "PES": moneda = "$"
+    elif moneda_raw == "DOL": moneda = "U$S"
+    else: moneda = moneda_raw
+        
     return {
         "producto": code,
         "detalle": api_item.get("Descripcion"),
@@ -95,47 +115,41 @@ def generate_reports(items, changes):
     now_str = datetime.now().strftime('%Y-%m-%d_%H-%M')
     os.makedirs(REPORTS_DIR, exist_ok=True)
     
-    # 1. Reporte de Cambios (Web)
+    # 1. MD Report
     report_path = os.path.join(REPORTS_DIR, f"report_cambios_{now_str}.md")
     with open(report_path, "w") as f:
         f.write(f"# Reporte de Cambios {datetime.now().strftime('%Y-%m-%d')}\n\n")
         if changes["updated"]:
             f.write("## 📈 Precios Modificados\n| Producto | Viejo | Nuevo |\n| --- | --- | --- |\n")
             for c in changes["updated"]: f.write(f"| {c['code']} | {c['old']} | {c['new']} |\n")
+        else:
+            f.write("No se detectaron cambios de precios.\n")
     
-    # 2. Lista Ferreteria (Excel/CSV)
-    ferreteria_path = os.path.join(REPORTS_DIR, f"lista_ferreteria_{now_str}.csv")
-    with open(ferreteria_path, "w", newline="", encoding="utf-8-sig") as f:
-        writer = csv.writer(f)
-        # Formato solicitado: Producto	Detalle	Marca	Unidad	Moneda	Precio
-        writer.writerow(["Producto", "Detalle", "Marca", "Unidad", "Moneda", "Precio"])
-        for item in items:
-            writer.writerow([
-                item["producto"], 
-                item["detalle"], 
-                item["marca"], 
-                item["unidad"], 
-                item["moneda"], 
-                item["precio_resale"]
-            ])
+    # 2. Resale XLSX (Actual Excel Format)
+    ferreteria_path = os.path.join(REPORTS_DIR, f"lista_ferreteria_{now_str}.xlsx")
+    workbook = xlsxwriter.Workbook(ferreteria_path)
+    worksheet = workbook.add_worksheet()
+    headers = ["Producto", "Detalle", "Marca", "Unidad", "Moneda", "Precio"]
+    for col, h in enumerate(headers): worksheet.write(0, col, h)
+    for row, item in enumerate(items, 1):
+        worksheet.write(row, 0, item["producto"])
+        worksheet.write(row, 1, item["detalle"])
+        worksheet.write(row, 2, item["marca"])
+        worksheet.write(row, 3, "Un" if item["unidad"] == "UN" else item["unidad"])
+        worksheet.write(row, 4, item["moneda"])
+        worksheet.write(row, 5, float(item["precio_resale"]))
+    workbook.close()
     
-    # Update quick access link
-    with open(os.path.join(REPORTS_DIR, "ultimo_reporte.md"), "w") as f: f.write(f"Ultimo reporte generado: {now_str}")
+    return ferreteria_path
 
 def save_data(items):
     date_str = datetime.now().strftime("%y-%m-%d")
     filename = f"lista_precio_{date_str}_json_compres.gz"
     rel_path = os.path.join("data", filename)
     full_path = os.path.join(DATA_DIR, filename)
-    
-    # Remove internal fields before saving for the web
-    web_data = []
-    for item in items:
-        web_item = item.copy()
-        web_item.pop("precio_resale", None)
-        web_data.append(web_item)
-        
-    with gzip.open(full_path, "wt", encoding="utf-8") as f: json.dump(web_data, f, indent=2, ensure_ascii=False)
+    web_data = [ {k:v for k,v in item.items() if k != "precio_resale"} for item in items ]
+    with gzip.open(full_path, "wt", encoding="utf-8") as f:
+        json.dump(web_data, f, indent=2, ensure_ascii=False)
     with open(LATEST_INDEX_FILE, "w") as f: f.write(rel_path)
     return rel_path
 
@@ -146,14 +160,18 @@ if __name__ == "__main__":
         api_data = fetch_products(token)
         new_items = [transform_item(i) for i in api_data]
         
-        # Simple change detection
         changes = {"updated": [], "new": [], "removed": []}
         for item in new_items:
             code = item["producto"]
             if code in old_data and old_data[code]["precio"] != item["precio"]:
                 changes["updated"].append({"code": code, "old": old_data[code]["precio"], "new": item["precio"]})
+            elif code not in old_data:
+                changes["new"].append({"code": code, "new": item["precio"]})
                 
-        generate_reports(new_items, changes)
+        ferreteria_file = generate_reports(new_items, changes)
         save_data(new_items)
-        print("Success! Process complete.")
+        if changes["updated"] or changes["new"]:
+            caption = f"🚀 Lista de Ferretería Actualizada - {datetime.now().strftime('%d/%m/%Y')}\nSe detectaron {len(changes['updated'])} cambios y {len(changes['new'])} productos nuevos."
+            send_telegram_file(ferreteria_file, caption)
+        print("Process complete.")
     except Exception as e: print(f"Error: {e}"); exit(1)
