@@ -97,9 +97,17 @@ def generate_reports(items, changes):
     ferreteria_path = os.path.join(REPORTS_DIR, f"lista_ferreteria_{now_str}.csv")
     with open(ferreteria_path, "w", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f)
-        writer.writerow(["Codigo", "Descripcion", "Marca", "Precio Publico", "Precio Ferreteria (-20%)"])
+        # Formato solicitado: Producto	Detalle	Marca	Unidad	Moneda	Precio
+        writer.writerow(["Producto", "Detalle", "Marca", "Unidad", "Moneda", "Precio"])
         for item in items:
-            writer.writerow([item["producto"], item["detalle"], item["marca"], item["precio"], item["precio_resale"]])
+            writer.writerow([
+                item["producto"], 
+                item["detalle"], 
+                item["marca"], 
+                item["unidad"], 
+                item["moneda"], 
+                item["precio_resale"]
+            ])
     
     # Update quick access link
     with open(os.path.join(REPORTS_DIR, "ultimo_reporte.md"), "w") as f: f.write(f"Ultimo reporte generado: {now_str}")
