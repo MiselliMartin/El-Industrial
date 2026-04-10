@@ -17,10 +17,6 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 REPORTS_DIR = os.path.join(BASE_DIR, "reports")
 ENV_FILE = os.path.join(BASE_DIR, ".env")
 
-# Telegram Default
-TELEGRAM_TOKEN = "8174958315:AAFL8e_hBh0jsO1VpLiUp33mLRnji0gZ63g"
-TELEGRAM_CHAT_ID = "6425231391"
-
 def load_config():
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, "r") as f:
@@ -40,15 +36,24 @@ def load_env():
 env = load_env()
 config = load_config()
 
+# API Credentials
 CUIT = env.get("BERTUAL_CUIT")
 PASSWORD = env.get("BERTUAL_PASSWORD")
 CLIENT_ID = env.get("BERTUAL_CLIENT_ID")
+
+# Telegram Credentials (Now from .env)
+TELEGRAM_TOKEN = env.get("TELEGRAM_TOKEN")
+TELEGRAM_CHAT_ID = env.get("TELEGRAM_CHAT_ID")
 
 MARKUP = config.get("markup", 0.0)
 IVA = config.get("iva", 0.0)
 RESALE_DISCOUNT = config.get("resale_discount", 0.20)
 
 def send_telegram_file(file_path, caption):
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+        print("Telegram credentials missing in .env. Skipping.")
+        return
+        
     print(f"Sending {file_path} to Telegram...")
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendDocument"
     try:
@@ -88,10 +93,7 @@ def fetch_products(token):
         res_data = json.loads(response.read().decode())
         return res_data.get("data", [])
 
-def calculate_price(neto, alicuota_api=21):
-    # If config IVA is 0, we trust the API might already have it or user wants Neto
-    # But common logic: Price = Neto * (1 + IVA_API/100) if user wants 'Lista'
-    # The user said 'tal cual el proveedor'. 
+def calculate_price(neto):
     return neto * (1 + IVA) * (1 + MARKUP)
 
 def transform_item(api_item):
@@ -118,13 +120,6 @@ def transform_item(api_item):
 def generate_reports(items, changes):
     now_str = datetime.now().strftime('%Y-%m-%d_%H-%M')
     os.makedirs(REPORTS_DIR, exist_ok=True)
-    report_path = os.path.join(REPORTS_DIR, f"report_cambios_{now_str}.md")
-    with open(report_path, "w") as f:
-        f.write(f"# Reporte de Cambios {datetime.now().strftime('%Y-%m-%d')}\n\n")
-        if changes["updated"]:
-            f.write("## 📈 Precios Modificados\n| Producto | Viejo | Nuevo |\n| --- | --- | --- |\n")
-            for c in changes["updated"]: f.write(f"| {c['code']} | {c['old']} | {c['new']} |\n")
-        else: f.write("No se detectaron cambios de precios.\n")
     
     ferreteria_path = os.path.join(REPORTS_DIR, f"lista_ferreteria_{now_str}.xlsx")
     workbook = xlsxwriter.Workbook(ferreteria_path)
@@ -135,10 +130,12 @@ def generate_reports(items, changes):
         worksheet.write(row, 0, item["producto"])
         worksheet.write(row, 1, item["detalle"])
         worksheet.write(row, 2, item["marca"])
-        worksheet.write(row, 3, "Un" if item["unidad"] == "UN" else item.get("unidad", "Un"))
+        u = item["unidad"]
+        worksheet.write(row, 3, "Un" if u in ["UN", "Un"] else u)
         worksheet.write(row, 4, item["moneda"])
         worksheet.write(row, 5, float(item["precio_resale"]))
     workbook.close()
+    
     return ferreteria_path
 
 def save_data(items):
@@ -158,26 +155,26 @@ if __name__ == "__main__":
         token = login()
         api_data = fetch_products(token)
         new_items = [transform_item(i) for i in api_data]
-        changes = {"updated": [], "new": [], "removed": []}
+        
+        changes = {"updated": [], "new": []}
         for item in new_items:
             code = item["producto"]
             if code in old_data and old_data[code]["precio"] != item["precio"]:
                 changes["updated"].append({"code": code, "old": old_data[code]["precio"], "new": item["precio"]})
             elif code not in old_data:
                 changes["new"].append({"code": code, "new": item["precio"]})
-        
+                
         rep_file = generate_reports(new_items, changes)
         save_data(new_items)
         
-        # Always send the Excel file as requested
+        # Always send the Excel file as requested by the user
         if not os.getenv("SKIP_TELEGRAM"):
             cap = f"🚀 Lista de Ferretería Actualizada - {datetime.now().strftime('%d/%m/%Y')}"
             if changes["updated"] or changes["new"]:
                 cap += f"\nSe detectaron {len(changes['updated'])} cambios y {len(changes['new'])} productos nuevos."
             else:
-                cap += "\nNo se detectaron cambios de precio hoy (envío de lista actual)."
-            
+                cap += "\nEnviando lista actual (sin cambios de precio hoy)."
             send_telegram_file(rep_file, cap)
-        
-        print("Done.")
+            
+        print("Process complete.")
     except Exception as e: print(f"Error: {e}"); exit(1)
