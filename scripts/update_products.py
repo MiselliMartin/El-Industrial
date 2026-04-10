@@ -168,8 +168,16 @@ if __name__ == "__main__":
         
         rep_file = generate_reports(new_items, changes)
         save_data(new_items)
-        if (changes["updated"] or changes["new"]) and not os.getenv("SKIP_TELEGRAM"):
-            cap = f"🚀 Lista Actualizada - {datetime.now().strftime('%d/%m/%Y')}\n{len(changes['updated'])} cambios, {len(changes['new'])} nuevos."
+        
+        # Always send the Excel file as requested
+        if not os.getenv("SKIP_TELEGRAM"):
+            cap = f"🚀 Lista de Ferretería Actualizada - {datetime.now().strftime('%d/%m/%Y')}"
+            if changes["updated"] or changes["new"]:
+                cap += f"\nSe detectaron {len(changes['updated'])} cambios y {len(changes['new'])} productos nuevos."
+            else:
+                cap += "\nNo se detectaron cambios de precio hoy (envío de lista actual)."
+            
             send_telegram_file(rep_file, cap)
+        
         print("Done.")
     except Exception as e: print(f"Error: {e}"); exit(1)
