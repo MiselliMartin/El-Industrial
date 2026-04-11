@@ -30,6 +30,8 @@ def load_env():
             for line in f:
                 if "=" in line and not line.startswith("#"):
                     key, value = line.strip().split("=", 1)
+                    # Strip quotes if present
+                    value = value.strip().strip('"').strip("'")
                     env_vars[key] = value
     return env_vars
 
