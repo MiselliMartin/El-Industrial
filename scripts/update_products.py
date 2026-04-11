@@ -57,18 +57,20 @@ def send_telegram_file(file_path, caption):
         return
         
     print(f"Sending {file_path} to Telegram...")
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendDocument"
     try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendDocument"
         with open(file_path, 'rb') as f:
-            files = {'document': f}
+            # Better robust file sending with filename
+            files = {'document': (os.path.basename(file_path), f)}
             data = {'chat_id': TELEGRAM_CHAT_ID, 'caption': caption}
             response = requests.post(url, files=files, data=data)
-            if response.status_code == 200:
-                print("Telegram message sent successfully.")
-            else:
-                print(f"Error sending Telegram: {response.text}")
+        
+        if response.status_code == 200:
+            print("Telegram message sent successfully.")
+        else:
+            print(f"Error sending Telegram: {response.status_code} - {response.text}")
     except Exception as e:
-        print(f"Telegram error: {e}")
+        print(f"Failed to send Telegram: {e}")
 
 def load_current_data():
     if not os.path.exists(LATEST_INDEX_FILE): return {}
