@@ -7,45 +7,30 @@ from datetime import datetime
 import urllib.request
 import requests
 import xlsxwriter
+from dotenv import load_dotenv
+from bertual_api import BertualAPIClient
 
 # Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-API_URL = "https://autogestion-ehaedo.bertual.com.ar:8200/api"
 LATEST_INDEX_FILE = os.path.join(BASE_DIR, "latest-json-filename.txt")
 CONFIG_FILE = os.path.join(BASE_DIR, "config.json")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 REPORTS_DIR = os.path.join(BASE_DIR, "reports")
 ENV_FILE = os.path.join(BASE_DIR, ".env")
 
+load_dotenv(ENV_FILE)
+
 def load_config():
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, "r") as f:
-            return json.load(f)
-    return {"markup": 0.0, "iva": 0.0, "resale_discount": 0.20}
+    if not os.path.exists(CONFIG_FILE):
+        raise FileNotFoundError(f"Configuration file {CONFIG_FILE} is missing. Please provide it so the bot doesn't hallucinate missing fallbacks.")
+    with open(CONFIG_FILE, "r") as f:
+        return json.load(f)
 
-def load_env():
-    env_vars = {}
-    if os.path.exists(ENV_FILE):
-        with open(ENV_FILE, "r") as f:
-            for line in f:
-                if "=" in line and not line.startswith("#"):
-                    key, value = line.strip().split("=", 1)
-                    # Strip quotes if present
-                    value = value.strip().strip('"').strip("'")
-                    env_vars[key] = value
-    return env_vars
-
-env = load_env()
 config = load_config()
 
-# API Credentials
-CUIT = env.get("BERTUAL_CUIT")
-PASSWORD = env.get("BERTUAL_PASSWORD")
-CLIENT_ID = env.get("BERTUAL_CLIENT_ID")
-
 # Telegram Credentials (Now from .env)
-TELEGRAM_TOKEN = env.get("TELEGRAM_TOKEN")
-TELEGRAM_CHAT_ID = env.get("TELEGRAM_CHAT_ID")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 MARKUP = config.get("markup", 0.0)
 IVA = config.get("iva", 0.0)
@@ -82,20 +67,6 @@ def load_current_data():
             data = json.load(f)
             return {p["producto"]: p for p in data}
     except: return {}
-
-def login():
-    data = json.dumps({"cuit": CUIT, "password": PASSWORD}).encode("utf-8")
-    req = urllib.request.Request(f"{API_URL}/login", data=data, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req) as response:
-        res_data = json.loads(response.read().decode())
-        return res_data.get("token")
-
-def fetch_products(token):
-    url = f"{API_URL}/precios/?q=&f=&cl={CLIENT_ID}"
-    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
-    with urllib.request.urlopen(req) as response:
-        res_data = json.loads(response.read().decode())
-        return res_data.get("data", [])
 
 def calculate_price(neto):
     return neto * (1 + IVA) * (1 + MARKUP)
@@ -154,10 +125,22 @@ def save_data(items):
     return rel_path
 
 if __name__ == "__main__":
+    import sys
+    if "--force-telegram" in sys.argv:
+        import glob
+        files = glob.glob(os.path.join(REPORTS_DIR, "lista_ferreteria_*.*"))
+        if not files:
+            print("No se encontraron exceles en la carpeta reports para enviar de prueba.")
+            exit(1)
+        latest_file = max(files, key=os.path.getctime)
+        send_telegram_file(latest_file, "🚀 (TEST) Forzando el envío del último Excel disponible para verificar conectividad con Telegram.")
+        print(f"Test de telegram finalizado, archivo enviado: {latest_file}.")
+        exit(0)
+
     try:
         old_data = load_current_data()
-        token = login()
-        api_data = fetch_products(token)
+        api_client = BertualAPIClient()
+        api_data = api_client.fetch_products()
         new_items = [transform_item(i) for i in api_data]
         
         changes = {"updated": [], "new": []}
@@ -168,17 +151,16 @@ if __name__ == "__main__":
             elif code not in old_data:
                 changes["new"].append({"code": code, "new": item["precio"]})
                 
-        rep_file = generate_reports(new_items, changes)
-        save_data(new_items)
-        
-        # Always send the Excel file as requested by the user
-        if not os.getenv("SKIP_TELEGRAM"):
-            cap = f"🚀 Lista de Ferretería Actualizada - {datetime.now().strftime('%d/%m/%Y')}"
-            if changes["updated"] or changes["new"]:
-                cap += f"\nSe detectaron {len(changes['updated'])} cambios y {len(changes['new'])} productos nuevos."
-            else:
-                cap += "\nEnviando lista actual (sin cambios de precio hoy)."
-            send_telegram_file(rep_file, cap)
+        if changes["updated"] or changes["new"]:
+            rep_file = generate_reports(new_items, changes)
+            save_data(new_items)
             
-        print("Process complete.")
+            if not os.getenv("SKIP_TELEGRAM"):
+                cap = f"🚀 Lista de Ferretería Actualizada - {datetime.now().strftime('%d/%m/%Y')}"
+                if changes["updated"] or changes["new"]:
+                    cap += f"\nSe detectaron {len(changes['updated'])} cambios y {len(changes['new'])} productos nuevos."
+                send_telegram_file(rep_file, cap)
+            print("Process complete with changes.")
+        else:
+            print("No changes detected in prices or items. Skipping file updates and Telegram notification.")
     except Exception as e: print(f"Error: {e}"); exit(1)

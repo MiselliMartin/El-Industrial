@@ -24,7 +24,7 @@ if [ $? -eq 0 ]; then
     fi
     git add .
     git commit -m "Actualización automática de precios: $(date +%d/%m/%Y) [$(hostname)]"
-    git push origin main
+    git push origin HEAD:main
 else
     exit 1
 fi
