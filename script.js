@@ -9,6 +9,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   let currentJsonFileName = "";
   let products = [];
   let searchTimeout;
+  let usDollarPrice = null; // Para guardar la cotización
+  let showInARS = false;    // Estado del toggle de moneda
 
   // Función para obtener el nombre del archivo JSON desde latest-json-filename.txt en la raíz
   const getLatestJsonFileName = async () => {
@@ -32,14 +34,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       const response = await fetch("https://dolarapi.com/v1/ambito/dolares/oficial");
       const data = await response.json();
       console.log("Precio del dólar obtenido:", data);
-      const ventaRedondeada = Math.round(data.venta);
-      dollarPriceElement.textContent = `$${ventaRedondeada}`;
+      usDollarPrice = Math.round(data.venta);
+      dollarPriceElement.textContent = `$${usDollarPrice}`;
       
       const fecha = new Date(data.fechaActualizacion);
-      const opciones = { day: '2-digit', month: '2-digit' };
+      const opciones = { day: '2-digit', month: '2-digit', year: 'numeric' };
       const dollarDateElement = document.getElementById("dollarDatee");
       if (dollarDateElement) {
         dollarDateElement.textContent = `(${fecha.toLocaleDateString('es-AR', opciones)})`;
+      }
+      
+      const currencyToggle = document.getElementById("currencyToggle");
+      if (currencyToggle) {
+        currencyToggle.style.display = "inline-block";
       }
     } catch (error) {
       console.error("Error al obtener el precio del dólar:", error);
@@ -83,29 +90,46 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   const displayProducts = (productsToDisplay) => {
-    productTable.innerHTML = "";
     if (productsToDisplay.length === 0) {
-      const row = document.createElement("tr");
-      const cell = document.createElement("td");
-      cell.colSpan = 5;
-      cell.textContent = "No se ha encontrado el producto.";
-      cell.style.textAlign = "center";
-      row.appendChild(cell);
-      productTable.appendChild(row);
+      productTable.innerHTML = `<tr><td colspan="5" style="text-align:center;">No se ha encontrado el producto.</td></tr>`;
       return;
     }
+
+    let rowsHtml = "";
     productsToDisplay.forEach((product) => {
-      const row = document.createElement("tr");
-      const monedaDisplay = (product.moneda === "DOL" || product.moneda === "USD") ? "U$S" : product.moneda;
-      row.innerHTML = `
-        <td data-label="Producto">${product.producto}</td>
-        <td data-label="Detalle">${product.detalle}</td>
-        <td data-label="Marca">${product.marca}</td>
-        <td data-label="Un/Mts">${product.unidad === "UN" || product.unidad === "Un" ? "Un" : "Mts"}</td>
-        <td data-label="Precio">${monedaDisplay} ${product.precio}</td>
+      let monedaDisplay = product.moneda;
+      let precioDisplay = product.precio;
+      let isPrecioConvertido = false;
+
+      const isDolar = (product.moneda === "DOL" || product.moneda === "USD");
+      
+      if (showInARS && isDolar && usDollarPrice !== null) {
+          monedaDisplay = "$";
+          const precioConvertido = parseFloat(product.precio) * usDollarPrice;
+          precioDisplay = precioConvertido.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          isPrecioConvertido = true;
+      } else {
+          monedaDisplay = isDolar ? "U$S" : product.moneda;
+      }
+      
+      const formatUnidad = product.unidad === "UN" || product.unidad === "Un" ? "Un" : "Mts";
+      const styleConvertido = isPrecioConvertido ? 'title="Precio aproximado según cotización de hoy" style="font-weight: bold;"' : '';
+      const markIndicator = isPrecioConvertido ? ' <span style="opacity:0.6; font-size:0.8em">*</span>' : '';
+
+      rowsHtml += `
+        <tr>
+          <td data-label="Producto">${product.producto}</td>
+          <td data-label="Detalle">${product.detalle}</td>
+          <td data-label="Marca">${product.marca}</td>
+          <td data-label="Un/Mts">${formatUnidad}</td>
+          <td data-label="Precio" ${styleConvertido}>
+              ${monedaDisplay} ${precioDisplay}${markIndicator}
+          </td>
+        </tr>
       `;
-      productTable.appendChild(row);
     });
+    
+    productTable.innerHTML = rowsHtml;
   };
 
   const filterProducts = (searchTerm) => {
@@ -161,6 +185,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     themeToggle.style.backgroundColor = document.body.classList.contains("dark-mode") ? "#2e2e2e" : "#fafafa";
   });
 
+  const currencyToggle = document.getElementById("currencyToggle");
+  if (currencyToggle) {
+    currencyToggle.addEventListener("click", () => {
+      showInARS = !showInARS;
+      currencyToggle.textContent = showInARS ? "🔄 U$S" : "🔄 AR$";
+      const searchTerm = searchInput.value.trim();
+      const filteredProducts = searchTerm ? filterProducts(searchTerm) : products;
+      displayProducts(filteredProducts);
+    });
+  }
+
   // Función para extraer y mostrar la fecha del archivo (basada en su nombre)
   const extractDateFromFileName = (fileName) => {
     const datePattern = /(\d{2}-\d{2}-\d{2,4})/;
@@ -171,10 +206,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   const displayDate = () => {
     const fechaExtraida = extractDateFromFileName(currentJsonFileName);
     if (fechaExtraida) {
-      fechaListaElement.textContent = `Según Lista ${fechaExtraida}`;
+      // Reformat de yy-mm-dd (del nombre de archivo) a dd/mm/yyyy
+      const parts = fechaExtraida.split("-");
+      let fechaFormateada = fechaExtraida;
+      if (parts.length === 3) {
+        const [y, m, d] = parts;
+        const fullYear = y.length === 2 ? "20" + y : y;
+        fechaFormateada = `${d}/${m}/${fullYear}`;
+      }
+      
+      fechaListaElement.textContent = `Según Lista ${fechaFormateada}`;
       fechaListaElement.style.fontSize = "small";
       fechaListaElement.style.textAlign = "center";
-      console.log("Fecha extraída del archivo:", fechaExtraida);
+      console.log("Fecha formateada para la lista:", fechaFormateada);
     } else {
       console.log("No se pudo extraer fecha del nombre del archivo:", currentJsonFileName);
     }

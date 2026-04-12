@@ -10,13 +10,19 @@ import xlsxwriter
 from dotenv import load_dotenv
 from bertual_api import BertualAPIClient
 
+import sys
 # Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 LATEST_INDEX_FILE = os.path.join(BASE_DIR, "latest-json-filename.txt")
 CONFIG_FILE = os.path.join(BASE_DIR, "config.json")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 REPORTS_DIR = os.path.join(BASE_DIR, "reports")
 ENV_FILE = os.path.join(BASE_DIR, ".env")
+
+# Asegurar que los módulos en el mismo directorio sean importables
+if SCRIPT_DIR not in sys.path:
+    sys.path.append(SCRIPT_DIR)
 
 load_dotenv(ENV_FILE)
 
