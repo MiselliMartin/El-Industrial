@@ -44,7 +44,7 @@ def get_ai_summary(changes):
         return "Resumen IA no disponible (falta GEMINI_API_KEY en .env)."
     
     print("Generando resumen ejecutivo con Gemini...")
-    model_name = "gemini-2.0-flash" 
+    model_name = "gemini-3.1-flash-lite-preview" 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
     
     # Preparamos un prompt conciso con los datos de cambios
