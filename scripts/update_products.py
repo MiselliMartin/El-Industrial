@@ -31,6 +31,54 @@ config = load_config()
 # Telegram Credentials (Now from .env)
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+def get_ai_summary(changes):
+    if not GEMINI_API_KEY:
+        return "Resumen IA no disponible (falta GEMINI_API_KEY en .env)."
+    
+    print("Generando resumen ejecutivo con Gemini...")
+    model_name = "gemini-2.0-flash" 
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
+    
+    # Preparamos un prompt conciso con los datos de cambios
+    # Limitamos la cantidad de cambios enviados si son demasiados para no saturar
+    short_changes = {
+        "updated": changes["updated"][:50], # Top 50 si hay muchos
+        "new": changes["new"][:20],
+        "total_updated": len(changes["updated"]),
+        "total_new": len(changes["new"])
+    }
+    
+    prompt = f"""
+    Eres un analista de precios experto en ferretería industrial. 
+    Analiza estos cambios del día y genera un resumen ejecutivo MUY BREVE (máx 10 líneas) para el dueño.
+    Dime qué marcas subieron más fuerte, si hay productos nuevos clave y cuál es la tendencia general.
+    Cambios: {json.dumps(short_changes)}
+    
+    Escribe en español, de forma profesional y directa. No uses saludos, ve al grano.
+    """
+    
+    headers = {'Content-Type': 'application/json'}
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }],
+        "generationConfig": {
+            "temperature": 0.2,
+            "maxOutputTokens": 400
+        }
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        data = response.json()
+        summary = data['candidates'][0]['content']['parts'][0]['text']
+        return summary.strip()
+    except Exception as e:
+        print(f"Error llamando a Gemini: {e}")
+        return "No se pudo generar el resumen automático debido a un error técnico."
+
 
 MARKUP = config.get("markup", 0.0)
 IVA = config.get("iva", 0.0)
@@ -155,10 +203,13 @@ if __name__ == "__main__":
             rep_file = generate_reports(new_items, changes)
             save_data(new_items)
             
+            # Obtener Resumen IA
+            ai_summary = get_ai_summary(changes)
+            
             if not os.getenv("SKIP_TELEGRAM"):
-                cap = f"🚀 Lista de Ferretería Actualizada - {datetime.now().strftime('%d/%m/%Y')}"
-                if changes["updated"] or changes["new"]:
-                    cap += f"\nSe detectaron {len(changes['updated'])} cambios y {len(changes['new'])} productos nuevos."
+                cap = f"🚀 Actualización - {datetime.now().strftime('%d/%m/%Y')}\n\n"
+                cap += f"{ai_summary}\n\n"
+                cap += f"📦 {len(changes['updated'])} cambios | {len(changes['new'])} nuevos"
                 send_telegram_file(rep_file, cap)
             print("Process complete with changes.")
         else:
