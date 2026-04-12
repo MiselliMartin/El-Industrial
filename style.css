@@ -1,41 +1,62 @@
+:root {
+  --primary-color: #007bff;
+  --bg-light: #f8f9fa;
+  --bg-dark: #121212;
+  --card-light: #ffffff;
+  --card-dark: #1e1e1e;
+  --text-light: #333333;
+  --text-dark: #e0e0e0;
+  --header-height: 85px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 25px;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
 body {
-  font-family: Arial, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   margin: 0;
-  padding-top: 70px;
+  padding-top: var(--header-height);
   padding-left: 20px;
   padding-right: 20px;
-  background-color: #fafafa;
+  background-color: var(--bg-light);
+  color: var(--text-light);
+  transition: background-color 0.3s, color 0.3s;
 }
 
 #searchContainer {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 15px;
+  left: 20px;
+  right: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 80px 10px 25px; /* Espacio para que el botón de luna no se monte */
-  background-color: #fafafa;
+  padding: 12px 75px 12px 20px;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   z-index: 1000;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow);
 }
 
 #searchInput {
-  flex: 0 0 calc(82.5% - 20px);
+  flex: 1;
   margin: 0;
-  padding: 10px 20px;
+  padding: 12px 20px;
   box-sizing: border-box;
-  border: 1px solid #ccc;
-  border-radius: 25px;
+  border: 1.5px solid #eee;
+  border-radius: var(--radius-lg);
   font-size: 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: border-color 0.3s ease;
+  background: white;
+  transition: all 0.2s ease;
 }
 
 #searchInput:focus {
-  border-color: #007bff;
-  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.1);
   outline: none;
 }
 
@@ -73,40 +94,46 @@ body {
 
 #productTable {
   width: 100%;
-  border-collapse: collapse;
-  margin: 20px auto;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 25px auto;
+  background: white;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow);
 }
 
 #productTable th,
 #productTable td {
-  border: 1px solid #ddd;
-  padding: 8px;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 14px 16px;
   word-wrap: break-word;
-  word-break: break-all;
-  white-space: normal;
 }
 
 #productTable th {
-  background-color: #ddd;
+  background-color: #fcfcfc;
+  color: #666;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
   text-align: center;
 }
 
 #productTable td {
-  text-align: left;
+  font-size: 14px;
 }
 
-#productTable td:nth-child(3),
-#productTable td:nth-child(4),
-#productTable td:nth-child(5) {
-  text-align: center;
+#productTable tr:last-child td {
+  border-bottom: none;
+}
+
+#productTable tr:hover {
+  background-color: #fafafa;
 }
 
 #productTable tr:nth-child(even) {
-  background-color: #f2f2f2;
-}
-
-#productTable tr:nth-child(odd) {
-  background-color: #ffffff;
+  background-color: #fdfdfd;
 }
 
 .btnFloat {
@@ -151,73 +178,50 @@ body {
   display: none;
 }
 
-/* Modo oscuro */
+/* Modo oscuro adaptado */
 body.dark-mode {
-  background-color: #2e2e2e;
-  color: white;
+  background-color: var(--bg-dark);
+  color: var(--text-dark);
 }
 
 body.dark-mode #searchContainer {
-  background-color: #2e2e2e;
+  background-color: rgba(30, 30, 30, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
-body.dark-mode #productTable tr:nth-child(even) {
-  background-color: #1e1e1eb9;
+body.dark-mode #productTable {
+  background-color: var(--card-dark);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
 }
 
-body.dark-mode #productTable tr:nth-child(odd) {
-  background-color: #2e2e2eb9;
-}
 body.dark-mode #productTable th {
-  background-color: #1a1a1a;
-  color: white;
+  background-color: #252525;
+  color: #aaa;
+  border-bottom: 1px solid #333;
+}
+
+body.dark-mode #productTable td {
+  border-bottom: 1px solid #333;
+}
+
+body.dark-mode #productTable tr:hover {
+  background-color: #252525;
 }
 
 body.dark-mode #searchInput {
-  background-color: #453e3e;
+  background-color: #333;
   color: white;
-  border-color: #555;
-}
-
-body.dark-mode th {
-  background-color: #1e1e1eb9;
-  color: white;
+  border-color: #444;
 }
 
 body.dark-mode #dollarInfo {
-  background-color: #3e3e3e;
-  color: white;
-  border-color: #555;
+  background-color: #252525;
+  border-color: #444;
 }
 
-body.dark-mode .btnFloat {
-  background-color: #2e2e2e;
-  color: #fafafa;
-}
-
-.btnCurrency {
-  cursor: pointer;
-  padding: 0 15px;
-  font-weight: bold;
-  border-radius: 50px;
-  border: 1px solid #ccc;
-  background-color: #f0f0f0;
-  margin-left: 10px;
-  font-size: 14px;
-  white-space: nowrap;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  color: #333;
-}
-.btnCurrency:hover {
-  background-color: #e0e0e0;
-}
 body.dark-mode .btnCurrency {
-  background-color: #3e3e3e;
-  border-color: #555;
+  background-color: #252525;
+  border-color: #444;
   color: white;
 }
 
