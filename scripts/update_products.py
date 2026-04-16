@@ -89,7 +89,7 @@ def get_ai_summary(changes):
 MARKUP = config.get("markup", 0.0)
 IVA = config.get("iva", 0.0)
 RESALE_DISCOUNT = config.get("resale_discount", 0.20)
-USE_LIST_PRICE = config.get("use_list_price", False)
+APPLY_DISCOUNTS = config.get("apply_discounts", True)
 
 def send_telegram_file(file_path, caption):
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
@@ -127,8 +127,8 @@ def calculate_price(neto):
     return neto * (1 + IVA) * (1 + MARKUP)
 
 def transform_item(api_item):
-    # Seleccionar base de precio: Precio (Lista) o Precio_Neto (con descuentos Haedo)
-    base_price = api_item.get("Precio" if USE_LIST_PRICE else "Precio_Neto", 0)
+    # Seleccionar base de precio: Precio_Neto (con descuentos Haedo) o Precio (Lista original)
+    base_price = api_item.get("Precio_Neto" if APPLY_DISCOUNTS else "Precio", 0)
     final_price = calculate_price(base_price)
     code = api_item.get("Articulo_Corto") or api_item.get("Articulo")
     
