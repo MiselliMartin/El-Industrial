@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const response = await fetch("https://dolarapi.com/v1/ambito/dolares/oficial");
       const data = await response.json();
       console.log("Precio del dólar obtenido:", data);
-      usDollarPrice = Math.round(data.venta);
+      usDollarPrice = data.venta;
       dollarPriceElement.textContent = `$${usDollarPrice}`;
       
       const fecha = new Date(data.fechaActualizacion);
@@ -101,7 +101,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       let precioDisplay = product.precio;
       let isPrecioConvertido = false;
 
-      const isDolar = (product.moneda === "DOL" || product.moneda === "USD");
+      const isDolar = (product.moneda === "DOL" || product.moneda === "USD" || product.moneda === "U$S");
       
       if (showInARS && isDolar && usDollarPrice !== null) {
           monedaDisplay = "$";
