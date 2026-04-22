@@ -113,7 +113,7 @@ def calculate_price(neto):
     return neto * (1 + IVA) * (1 + MARKUP)
 
 def transform_item(api_item):
-    neto = api_item.get("Precio_Neto", 0)
+    neto = api_item.get("Precio", 0)
     final_price = calculate_price(neto)
     code = api_item.get("Articulo_Corto") or api_item.get("Articulo")
     
