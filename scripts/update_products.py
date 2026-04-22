@@ -113,6 +113,7 @@ def calculate_price(neto):
     return neto * (1 + IVA) * (1 + MARKUP)
 
 def transform_item(api_item):
+    # CRÍTICO: Usar siempre "Precio" (Bruto) y NO "Precio_Neto".    # El campo "Precio_Neto" de Bertual ya trae un descuento aplicado por la API    # que NO queremos aplicar a nuestros cálculos finales.
     neto = api_item.get("Precio", 0)
     final_price = calculate_price(neto)
     code = api_item.get("Articulo_Corto") or api_item.get("Articulo")
