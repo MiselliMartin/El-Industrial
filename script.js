@@ -12,19 +12,30 @@ document.addEventListener("DOMContentLoaded", async () => {
   let usDollarPrice = null; // Para guardar la cotización
   let showInARS = false;    // Estado del toggle de moneda
 
-  // Función para obtener el nombre del archivo JSON desde latest-json-filename.txt en la raíz
+  // Función para obtener el nombre del archivo JSON desde latest-json-filename.json en la raíz
   const getLatestJsonFileName = async () => {
     try {
-      console.log("Obteniendo nombre del archivo JSON desde /latest-json-filename.txt (raíz del sitio)...");
-      const response = await fetch("/latest-json-filename.txt"); // Fetch desde la raíz del sitio web
+      console.log("Obteniendo nombre del archivo JSON desde /latest-json-filename.json (raíz del sitio)...");
+      const response = await fetch("/latest-json-filename.json"); // Fetch desde la raíz del sitio web
       if (!response.ok) {
-        throw new Error("No se pudo obtener el nombre del archivo JSON desde /latest-json-filename.txt");
+        throw new Error("No se pudo obtener el nombre del archivo JSON desde /latest-json-filename.json");
       }
-      const latestFile = await response.text(); // Leer el nombre del archivo como texto
-      console.log("Nombre del archivo JSON obtenido desde /latest-json-filename.txt:", latestFile.trim());
+      const data = await response.json(); 
+      const latestFile = data.filename; // Esperamos un objeto { "filename": "..." }
+      console.log("Nombre del archivo JSON obtenido:", latestFile);
       return latestFile.trim();
     } catch (error) {
-      console.error("Error al obtener el nombre del JSON desde /latest-json-filename.txt:", error);
+      console.error("Error al obtener el nombre del JSON:", error);
+      // Fallback por si sigue siendo un archivo de texto plano
+      try {
+          const response = await fetch("/latest-json-filename.txt");
+          if (response.ok) {
+              const text = await response.text();
+              return text.trim();
+          }
+      } catch (e) {
+          console.error("Fallback a .txt también falló");
+      }
       throw error;
     }
   };
