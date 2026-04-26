@@ -55,36 +55,39 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   const fetchAndDecompressProducts = async () => {
-    console.log("Cargando y descomprimiendo productos desde:", currentJsonFileName);
+    console.log("Cargando productos desde:", currentJsonFileName);
     loader.classList.remove("hidden");
     try {
       const response = await fetch(currentJsonFileName);
-      if (!response.ok) {
-        throw new Error("Error en la respuesta de red");
+      if (!response.ok) throw new Error("Error en la respuesta de red");
+
+      let productsData;
+      if (currentJsonFileName.endsWith(".gz")) {
+        // Descomprimir el stream gzip
+        const compressedStream = response.body.pipeThrough(new DecompressionStream("gzip"));
+        const reader = compressedStream.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let jsonText = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          jsonText += decoder.decode(value, { stream: true });
+        }
+        jsonText += decoder.decode();
+        productsData = JSON.parse(jsonText);
+      } else {
+        // Carga directa de JSON plano
+        productsData = await response.json();
       }
 
-      // Descomprimir el stream gzip
-      const compressedStream = response.body.pipeThrough(new DecompressionStream("gzip"));
-      const reader = compressedStream.getReader();
-      const decoder = new TextDecoder("utf-8");
-      let jsonText = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        jsonText += decoder.decode(value, { stream: true });
-      }
-      jsonText += decoder.decode();
-
-      products = JSON.parse(jsonText);
-      console.log("Productos descomprimidos:", products);
-
-      // Guardamos en localStorage para cachear según el nombre del archivo
+      products = productsData;
+      console.log("Productos cargados:", products.length);
       localStorage.setItem("products", JSON.stringify(products));
       localStorage.setItem("jsonFileName", currentJsonFileName);
       displayProducts(products);
     } catch (error) {
       console.error("Error al cargar los productos:", error);
+      productTable.innerHTML = `<tr><td colspan="5" style="text-align:center; color: red;">Error al cargar la base de datos. Por favor reintente.</td></tr>`;
     }
     loader.classList.add("hidden");
   };
