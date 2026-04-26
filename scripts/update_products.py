@@ -47,6 +47,11 @@ if __name__ == '__main__':
     if not api_data: sys.exit(1)
     
     new_items = [transform_item(i) for i in api_data]
+    # --- SANITY CHECK ---
+    zeros = [p for p in new_items if float(p["precio"]) <= 0]
+    if len(zeros) > len(new_items) * 0.1: # Si mas del 10% son cero
+        print(f"[CRÍTICO] Abortando: {len(zeros)} productos con precio 0 detectados.")
+        sys.exit(1)
     fecha_str = datetime.now().strftime('%y-%m-%d')
     fn = 'data/lista_precio_' + fecha_str + '_json_compres.gz'
     
