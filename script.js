@@ -54,33 +54,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
-  const fetchInfraStatus = async () => {
-    const statusContainer = document.getElementById("systemStatus");
-    const statusText = statusContainer.querySelector(".status-text");
-    try {
-      const response = await fetch("/status/heartbeat.json");
-      if (!response.ok) throw new Error();
-      const data = await response.json();
-      
-      const lastRun = new Date(data.last_run);
-      const isGitHub = data.node.includes("GitHub");
-      
-      statusContainer.classList.remove("status-online", "status-offline", "status-watchdog");
-      
-      if (isGitHub) {
-        statusContainer.classList.add("status-watchdog");
-        statusText.textContent = "GitHub Watchdog Active";
-      } else {
-        statusContainer.classList.add("status-online");
-        statusText.textContent = `Sincronizado: ${data.node}`;
-      }
-      statusContainer.title = `Última corrida: ${lastRun.toLocaleString()}`;
-    } catch (error) {
-      statusContainer.classList.add("status-offline");
-      statusText.textContent = "Nodos Locales Offline";
-    }
-  };
-
   const fetchAndDecompressProducts = async () => {
     console.log("Cargando y descomprimiendo productos desde:", currentJsonFileName);
     loader.classList.remove("hidden");
@@ -254,6 +227,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Inicializamos la aplicación
   await initializeProducts();
   fetchDollarPrice();
-  fetchInfraStatus();
   searchInput.focus();
 });
