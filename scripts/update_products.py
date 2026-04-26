@@ -1,204 +1,142 @@
 #!/usr/bin/env python3
-import json
-import gzip
-import os
-import csv
-import socket
+import json, gzip, os, time, subprocess, sys, glob
 from datetime import datetime
-import urllib.request
-import requests
-import xlsxwriter
+import requests, xlsxwriter
 from dotenv import load_dotenv
 
-# Intentar importar BertualAPIClient
 try:
     from bertual_api import BertualAPIClient
 except ImportError:
-    # Si falla, intentar añadir el directorio actual al path
     import sys
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     from bertual_api import BertualAPIClient
 
-# --- Configuración de Rutas (Mejorada) ---
+# --- Rutas Dinámicas ---
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
-HOSTNAME = socket.gethostname()
-
-LATEST_INDEX_FILE = os.path.join(PROJECT_ROOT, "latest-json-filename.txt")
-CONFIG_FILE = os.path.join(PROJECT_ROOT, "config.json")
-DATA_DIR = os.path.join(PROJECT_ROOT, "data")
-REPORTS_DIR = os.path.join(PROJECT_ROOT, "reports")
-ENV_FILE = os.path.join(PROJECT_ROOT, ".env")
+BASE_DIR = os.path.dirname(SCRIPT_DIR)
+LATEST_INDEX_FILE = os.path.join(BASE_DIR, "latest-json-filename.txt")
+REPORTS_DIR = os.path.join(BASE_DIR, "reports")
+DATA_DIR = os.path.join(BASE_DIR, "data")
+STATUS_DIR = os.path.join(BASE_DIR, "status")
+ENV_FILE = os.path.join(BASE_DIR, ".env")
+CONFIG_FILE = os.path.join(BASE_DIR, "config.json")
 
 load_dotenv(ENV_FILE)
-
 def load_config():
-    if not os.path.exists(CONFIG_FILE):
-        print(f"WARN: Archivo de configuración {CONFIG_FILE} no encontrado. Usando valores por defecto.")
-        return {}
-    with open(CONFIG_FILE, "r") as f:
-        return json.load(f)
+    if not os.path.exists(CONFIG_FILE): return {"markup": 0.0, "iva": 0.0}
+    try:
+        with open(CONFIG_FILE, "r") as f: return json.load(f)
+    except: return {"markup": 0.0, "iva": 0.0}
 
 config = load_config()
-
-# Telegram Credentials
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-def get_ai_summary(changes):
-    if not GEMINI_API_KEY:
-        return "Resumen IA no disponible (falta GEMINI_API_KEY)."
-    
-    print(f"[{HOSTNAME}] Generando resumen ejecutivo con Gemini...")
-    model_name = "gemini-3.1-flash-lite-preview" 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
-    
-    short_changes = {
-        "updated": changes["updated"][:50],
-        "new": changes["new"][:20],
-        "total_updated": len(changes["updated"]),
-        "total_new": len(changes["new"])
-    }
-    
-    prompt = f"""
-    Eres un analista de precios experto en ferretería industrial. 
-    Analiza estos cambios del día y genera un resumen ejecutivo MUY BREVE (máx 10 líneas).
-    Dime qué marcas subieron más fuerte y cuál es la tendencia general.
-    Cambios: {json.dumps(short_changes)}
-    Escribe en español, profesional y directo.
-    """
-    
-    try:
-        response = requests.post(url, json={
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {"temperature": 0.2, "maxOutputTokens": 400}
-        }, timeout=30)
-        data = response.json()
-        return data['candidates'][0]['content']['parts'][0]['text'].strip()
-    except Exception as e:
-        return f"Error en resumen IA: {e}"
+def get_daily_accum_path():
+    return os.path.join(STATUS_DIR, "daily_accum.json")
 
-# --- Parámetros de Precios ---
-MARKUP = config.get("markup", 0.0)
-IVA = config.get("iva", 0.0)
-RESALE_DISCOUNT = config.get("resale_discount", 0.20)
-
-def send_telegram_file(file_path, caption):
-    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-        print(f"[{HOSTNAME}] Telegram credentials missing. Skipping.")
-        return
-        
+def update_heartbeat(host):
+    os.makedirs(STATUS_DIR, exist_ok=True)
     try:
-        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendDocument"
-        with open(file_path, 'rb') as f:
-            files = {'document': (os.path.basename(file_path), f)}
-            data = {'chat_id': TELEGRAM_CHAT_ID, 'caption': caption}
-            requests.post(url, files=files, data=data)
-    except Exception as e:
-        print(f"[{HOSTNAME}] Error enviando Telegram: {e}")
+        with open(os.path.join(STATUS_DIR, "heartbeat.json"), "w") as f:
+            json.dump({"last_run": datetime.now().isoformat(), "node": host}, f, indent=2)
+    except: pass
 
-def load_current_data():
-    if not os.path.exists(LATEST_INDEX_FILE): return {}
-    with open(LATEST_INDEX_FILE, "r") as f: rel_path = f.read().strip()
-    full_path = os.path.join(PROJECT_ROOT, rel_path)
-    if not os.path.exists(full_path): return {}
+def update_accumulator(changes):
+    os.makedirs(STATUS_DIR, exist_ok=True)
+    accum_path = get_daily_accum_path()
+    accum = {"updated": {}, "new": {}}
+    
+    if os.path.exists(accum_path):
+        try:
+            with open(accum_path, "r") as f:
+                accum = json.load(f)
+                if not isinstance(accum, dict) or "new" not in accum: raise ValueError()
+        except:
+            accum = {"updated": {}, "new": {}}
+    
+    for item in changes.get("new", []): accum["new"][item["code"]] = item
+    for item in changes.get("updated", []):
+        if item["code"] in accum["new"]: accum["new"][item["code"]]["new"] = item["new"]
+        else:
+            if item["code"] in accum["updated"]: accum["updated"][item["code"]]["new"] = item["new"]
+            else: accum["updated"][item["code"]] = item
+            
     try:
-        with gzip.open(full_path, "rt", encoding="utf-8") as f:
-            data = json.load(f)
-            return {p["producto"]: p for p in data}
-    except: return {}
+        with open(accum_path, "w") as f: json.dump(accum, f, indent=2)
+    except: pass
+
+def transform_item(i):
+    neto = i.get("Precio", 0)
+    p = neto * (1 + config.get("iva", 0)) * (1 + config.get("markup", 0))
+    c = i.get("Articulo_Corto") or i.get("Articulo")
+    m_raw = str(i.get("Moneda", "")).strip().upper()
+    
+    if m_raw in ["PES", "ARS"]: m = "$"
+    elif m_raw in ["DOL", "USD"]: m = "U$S"
+    else: m = m_raw # Mantener EUR, etc.
+    
+    return {"producto": c, "detalle": i.get("Descripcion"), "marca": i.get("Familia", "").strip(), "moneda": m, "precio": "{:.2f}".format(p)}
+
+def log_metrics(host, api_status, updates=0, peer_status="unknown", start_ts=None, changes=None):
+    os.makedirs(STATUS_DIR, exist_ok=True)
+    duration = round(time.time() - start_ts, 2) if start_ts else 0
+    entry = {"ts": datetime.now().isoformat(), "node": host, "api": api_status, "duration": duration, "updates": updates, "peer": peer_status}
+    try:
+        with open(os.path.join(STATUS_DIR, "metrics.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry) + "\n")
+    except: pass
+
+def check_node_status(ip):
+    try:
+        subprocess.check_output(["ping", "-c", "1", "-W", "1", ip])
+        return "online"
+    except: return "offline"
+
+def fetch_with_retries(client):
+    for i in range(3):
+        try:
+            t0 = time.time()
+            data = client.fetch_products()
+            if data and len(data) > 100: return data, round(time.time()-t0, 2)
+        except: pass
+        time.sleep(1)
+    return None, 0
 
 def calculate_price(neto):
-    return neto * (1 + IVA) * (1 + MARKUP)
-
-def transform_item(api_item):
-    # CRÍTICO: Usar siempre "Precio" (Bruto) y NO "Precio_Neto".    # El campo "Precio_Neto" de Bertual ya trae un descuento aplicado por la API    # que NO queremos aplicar a nuestros cálculos finales.
-    neto = api_item.get("Precio", 0)
-    final_price = calculate_price(neto)
-    code = api_item.get("Articulo_Corto") or api_item.get("Articulo")
-    
-    moneda_raw = str(api_item.get("Moneda", "")).strip().upper()
-    moneda = "$" if moneda_raw in ["PES", "ARS"] else ("U$S" if moneda_raw in ["DOL", "USD"] else moneda_raw)
-        
-    return {
-        "producto": code,
-        "detalle": api_item.get("Descripcion"),
-        "marca": api_item.get("Familia", "").strip(),
-        "unidad": api_item.get("Unidad"),
-        "moneda": moneda,
-        "precio": "{:.2f}".format(final_price),
-        "precio_resale": "{:.2f}".format(final_price * (1 - RESALE_DISCOUNT))
-    }
-
-def generate_reports(items):
-    now_str = datetime.now().strftime('%Y-%m-%d_%H-%M')
-    os.makedirs(REPORTS_DIR, exist_ok=True)
-    ferreteria_path = os.path.join(REPORTS_DIR, f"lista_ferreteria_{now_str}.xlsx")
-    
-    workbook = xlsxwriter.Workbook(ferreteria_path)
-    worksheet = workbook.add_worksheet()
-    headers = ["Producto", "Detalle", "Marca", "Unidad", "Moneda", "Precio"]
-    for col, h in enumerate(headers): worksheet.write(0, col, h)
-    for row, item in enumerate(items, 1):
-        worksheet.write(row, 0, item["producto"])
-        worksheet.write(row, 1, item["detalle"])
-        worksheet.write(row, 2, item["marca"])
-        worksheet.write(row, 3, item["unidad"])
-        worksheet.write(row, 4, item["moneda"])
-        worksheet.write(row, 5, float(item["precio_resale"]))
-    workbook.close()
-    return ferreteria_path
-
-def save_data(items):
-    date_str = datetime.now().strftime("%y-%m-%d")
-    filename = f"lista_precio_{date_str}_json_compres.gz"
-    rel_path = os.path.join("data", filename)
-    full_path = os.path.join(DATA_DIR, filename)
-    os.makedirs(DATA_DIR, exist_ok=True)
-    
-    web_data = [ {k:v for k,v in item.items() if k != "precio_resale"} for item in items ]
-    with gzip.open(full_path, "wt", encoding="utf-8") as f:
-        json.dump(web_data, f, indent=2, ensure_ascii=False)
-    with open(LATEST_INDEX_FILE, "w") as f: f.write(rel_path)
-    return rel_path
+    return neto * (1 + config.get("iva", 0)) * (1 + config.get("markup", 0))
 
 if __name__ == "__main__":
+    is_report_run = "--report" in sys.argv
+    import socket; host = socket.gethostname(); start_ts = time.time()
+    peer_status = check_node_status("100.115.152.45")
+    
+    api_data, api_lat = fetch_with_retries(BertualAPIClient())
+    if not api_data:
+        log_metrics(host, "api_fail", 0, peer_status, start_ts); exit(1)
+        
     try:
-        print(f"[{HOSTNAME}] Cargando datos actuales...")
-        old_data = load_current_data()
-        api_client = BertualAPIClient()
-        api_data = api_client.fetch_products()
-        
-        if not api_data or len(api_data) < 100:
-            raise Exception(f"API devolvió pocos productos ({len(api_data) if api_data else 0}).")
+        with open(LATEST_INDEX_FILE, "r") as f:
+            with gzip.open(os.path.join(BASE_DIR, f.read().strip()), "rt") as gf:
+                old_data = {p["producto"]: p for p in json.load(gf)}
+    except: old_data = {}
 
-        new_items = [transform_item(i) for i in api_data]
-        changes = {"updated": [], "new": []}
-        
-        for item in new_items:
-            code = item["producto"]
-            if code in old_data and old_data[code]["precio"] != item["precio"]:
-                changes["updated"].append({"code": code, "old": old_data[code]["precio"], "new": item["precio"]})
-            elif code not in old_data:
-                changes["new"].append({"code": code, "new": item["precio"]})
-                
-        if changes["updated"] or changes["new"]:
-            print(f"[{HOSTNAME}] Detectados {len(changes['updated'])} cambios y {len(changes['new'])} nuevos.")
-            rep_file = generate_reports(new_items)
-            save_data(new_items)
+    new_items = [transform_item(i) for i in api_data]
+    changes = {"updated": [], "new": []}
+    for item in new_items:
+        c = item["producto"]; p = item["precio"]
+        if c in old_data and old_data[c]["precio"] != p:
+            changes["updated"].append({"code": c, "name": item["detalle"], "old": old_data[c]["precio"], "new": p})
+        elif c not in old_data:
+            changes["new"].append({"code": c, "name": item["detalle"], "new": p})
             
-            ai_summary = get_ai_summary(changes)
-            
-            cap = f"🚀 Actualización - {datetime.now().strftime('%d/%m/%Y')}\n"
-            cap += f"💻 Nodo: {HOSTNAME}\n\n"
-            cap += f"{ai_summary}\n\n"
-            cap += f"📦 {len(changes['updated'])} cambios | {len(changes['new'])} nuevos"
-            
-            send_telegram_file(rep_file, cap)
-            print(f"[{HOSTNAME}] Proceso completado exitosamente.")
-        else:
-            print(f"[{HOSTNAME}] Sin cambios detectados.")
-    except Exception as e:
-        print(f"[{HOSTNAME}] ERROR: {e}")
-        exit(1)
+    update_accumulator(changes)
+    log_metrics(host, "ok", len(changes["updated"]) + len(changes["new"]), peer_status, start_ts, changes)
+    update_heartbeat(host)
+    
+    filename = f"lista_precio_{datetime.now().strftime('%y-%m-%d')}_json_compres.gz"
+    rel_path = os.path.join("data", filename)
+    with gzip.open(os.path.join(BASE_DIR, rel_path), "wt", encoding="utf-8") as f: 
+        json.dump(new_items, f, indent=2, ensure_ascii=False)
+    with open(LATEST_INDEX_FILE, "w") as f: f.write(rel_path)

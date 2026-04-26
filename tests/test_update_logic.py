@@ -24,8 +24,10 @@ class TestPriceLogic(unittest.TestCase):
         update_products.MARKUP = 0.0
         update_products.RESALE_DISCOUNT = 0.20
         
+        # El test debe usar "Precio" y NO "Precio_Neto"
         api_item = {
-            "Precio_Neto": 100.0,
+            "Precio": 100.0,
+            "Precio_Neto": 70.0, # Este debería ser ignorado según la nueva lógica
             "Articulo_Corto": "TEST01",
             "Descripcion": "Producto de Prueba",
             "Familia": " MARCA ",
@@ -37,9 +39,10 @@ class TestPriceLogic(unittest.TestCase):
         
         self.assertEqual(transformed["producto"], "TEST01")
         self.assertEqual(transformed["moneda"], "$")
+        # Debe ser 100.00 porque debe tomar "Precio" y no "Precio_Neto"
         self.assertEqual(transformed["precio"], "100.00")
         self.assertEqual(transformed["precio_resale"], "80.00")
-        self.assertEqual(transformed["marca"], "MARCA") # Verifica el strip()
+        self.assertEqual(transformed["marca"], "MARCA")
 
 if __name__ == '__main__':
     unittest.main()
