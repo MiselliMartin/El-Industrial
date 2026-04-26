@@ -73,21 +73,46 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!response.ok) throw new Error("Error en la respuesta de red");
 
       let productsData;
-      if (currentJsonFileName.endsWith(".gz")) {
-        // Descomprimir el stream gzip
-        const compressedStream = response.body.pipeThrough(new DecompressionStream("gzip"));
-        const reader = compressedStream.getReader();
-        const decoder = new TextDecoder("utf-8");
-        let jsonText = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          jsonText += decoder.decode(value, { stream: true });
+      const contentType = response.headers.get("Content-Type");
+      const contentEncoding = response.headers.get("Content-Encoding");
+
+      if (currentJsonFileName.endsWith(".gz") && contentEncoding !== "gzip") {
+        // El archivo dice ser .gz pero no viene con encoding gzip (posible texto plano)
+        // O necesitamos descomprimirlo manualmente si el navegador no lo hizo
+        try {
+            const arrayBuffer = await response.arrayBuffer();
+            const uint8Array = new Uint8Array(arrayBuffer);
+            
+            // Verificar "magic numbers" de GZIP (0x1f 0x8b)
+            if (uint8Array[0] === 0x1f && uint8Array[1] === 0x8b) {
+                const stream = new ReadableStream({
+                    start(controller) {
+                        controller.enqueue(uint8Array);
+                        controller.close();
+                    }
+                });
+                const decompressedStream = stream.pipeThrough(new DecompressionStream("gzip"));
+                const reader = decompressedStream.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let jsonText = "";
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    jsonText += decoder.decode(value, { stream: true });
+                }
+                jsonText += decoder.decode();
+                productsData = JSON.parse(jsonText);
+            } else {
+                // No es GZIP real, intentar leer como texto
+                const jsonText = new TextDecoder("utf-8").decode(uint8Array);
+                productsData = JSON.parse(jsonText);
+            }
+        } catch (e) {
+            console.error("Fallo la descompresión manual, intentando fallback:", e);
+            productsData = await response.json();
         }
-        jsonText += decoder.decode();
-        productsData = JSON.parse(jsonText);
       } else {
-        // Carga directa de JSON plano
+        // Carga directa de JSON plano o ya descomprimido por el navegador
         productsData = await response.json();
       }
 
