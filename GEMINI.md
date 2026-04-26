@@ -17,8 +17,10 @@ Este documento establece las normas fundamentales de arquitectura, seguridad y d
     *   **Análisis de Ventana de Carga:** El LLM analizará `status/metrics.jsonl` para determinar a qué horas el proveedor (Electronic Haedo) realiza sus cargas, permitiendo optimizar los horarios de los crons.
     *   **Estado de Infraestructura:** Informe de disponibilidad de los nodos y latencia de la API.
 
-## 🏗️ Arquitectura del Sistema
+## 🛡️ Protocolos de Seguridad y Despliegue
 
--   **Métricas:** Telemetría detallada en `status/metrics.jsonl`.
--   **Heartbeat:** Actualización de `status/heartbeat.json` para monitoreo de CI/CD.
--   **Silent Mode:** Capacidad de operar sin disparar alertas ni llamadas a la IA para optimizar costos y reducir ruido.
+1.  **Validación Pre-Flight:** Todo cambio en `scripts/update_products.py` DEBE ser validado con `python3 -m py_compile` antes de ser subido.
+2.  **Invariante de Producción:** El éxito de una tarea no se mide por el `git push`, sino por un `curl` exitoso a la URL de producción (`https://el-industrial.netlify.app`).
+3.  **Robustez del Frontend:** El `script.js` debe mantener la lógica de detección de "Magic Numbers" para GZIP, permitiendo fallos elegantes si el archivo se sirve descomprimido.
+4.  **Doble Remoto:** La Raspberry Pi debe mantener siempre dos remotos (`origin` y `personal`) para asegurar que el mirror de Netlify esté siempre sincronizado con el repositorio principal.
+5.  **Prohibición de Ignorar Datos:** La carpeta `data/` y los archivos `latest-json-filename.*` NUNCA deben ser ignorados por el `.gitignore` en las ramas de producción, ya que son la base de datos del cliente.
